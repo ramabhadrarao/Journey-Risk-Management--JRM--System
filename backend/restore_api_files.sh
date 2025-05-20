@@ -1,3 +1,192 @@
+#!/bin/bash
+# restore_api_files.sh - Restore original API files from the codebase
+
+echo "Restoring original API files from the codebase..."
+
+# Make sure the api directory exists
+mkdir -p api
+
+# Create risk_analysis.py (using a minimal implementation since we don't have the original)
+echo "Creating api/risk_analysis.py..."
+cat > api/risk_analysis.py << 'EOL'
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from models.route import Route
+from models.risk_data import RiskData
+
+risk_bp = Blueprint('risk', __name__)
+
+@risk_bp.route('/analyze/<route_id>', methods=['GET'])
+@jwt_required()
+def analyze_risk(route_id):
+    """Get risk analysis for a specific route"""
+    current_user_id = get_jwt_identity()
+    
+    # Get route
+    route = Route.get_by_id(route_id)
+    
+    if not route:
+        return jsonify({"error": "Route not found"}), 404
+    
+    # Check if user owns the route (unless admin)
+    from models import db
+    from bson.objectid import ObjectId
+    user = db.users.find_one({'_id': ObjectId(current_user_id)})
+    if str(route['user_id']) != current_user_id and user.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Get risk data
+    risk_data = RiskData.get_by_route_id(route_id)
+    
+    if not risk_data:
+        return jsonify({"error": "Risk data not found"}), 404
+    
+    # Process risk data for analysis
+    from services.route_safety import assess_risk_points, get_safety_recommendations
+    
+    risk_assessment = assess_risk_points(risk_data)
+    recommendations = get_safety_recommendations(risk_data)
+    
+    return jsonify({
+        "route_id": route_id,
+        "risk_assessment": risk_assessment,
+        "recommendations": recommendations
+    }), 200
+
+@risk_bp.route('/hotspots', methods=['GET'])
+@jwt_required()
+def get_risk_hotspots():
+    """Get risk hotspots in a geographical area"""
+    # Extract query parameters
+    lat = request.args.get('lat')
+    lng = request.args.get('lng')
+    radius = request.args.get('radius', 10)  # Default 10 km
+    
+    if not lat or not lng:
+        return jsonify({"error": "Missing lat or lng parameters"}), 400
+    
+    try:
+        lat = float(lat)
+        lng = float(lng)
+        radius = float(radius)
+    except ValueError:
+        return jsonify({"error": "Invalid parameter values"}), 400
+    
+    # Get risk hotspots
+    from services.route_safety import analyze_historical_accidents
+    
+    # Generate synthetic route points for the area
+    from math import sin, cos, radians
+    
+    route_points = []
+    for i in range(8):  # 8 points around the center
+        angle = radians(i * 45)  # 45 degrees apart
+        # Calculate points on a circle around the center
+        point_lat = lat + (radius / 111) * sin(angle)  # 111 km per degree of latitude
+        point_lng = lng + (radius / (111 * cos(radians(lat)))) * cos(angle)  # Adjust for longitude
+        
+        route_points.append({
+            'lat': point_lat,
+            'lng': point_lng
+        })
+    
+    # Add center point
+    route_points.append({
+        'lat': lat,
+        'lng': lng
+    })
+    
+    # Get accident hotspots
+    accident_hotspots = analyze_historical_accidents(route_points)
+    
+    return jsonify({
+        "hotspots": accident_hotspots
+    }), 200
+EOL
+
+# Create weather.py based on the codebase
+echo "Creating api/weather.py..."
+cat > api/weather.py << 'EOL'
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from services.weather_service import get_weather_data, get_weather_hazards
+
+weather_bp = Blueprint('weather', __name__)
+
+@weather_bp.route('/forecast', methods=['GET'])
+def get_forecast():
+    """Get weather forecast for a location"""
+    # Extract query parameters
+    lat = request.args.get('lat')
+    lng = request.args.get('lng')
+    
+    if not lat or not lng:
+        return jsonify({"error": "Missing lat or lng parameters"}), 400
+    
+    try:
+        lat = float(lat)
+        lng = float(lng)
+    except ValueError:
+        return jsonify({"error": "Invalid parameter values"}), 400
+    
+    # Get weather data
+    weather = get_weather_data([{'lat': lat, 'lng': lng}])
+    
+    if not weather:
+        return jsonify({"error": "Failed to get weather data"}), 500
+    
+    return jsonify({
+        "location": {
+            "lat": lat,
+            "lng": lng
+        },
+        "weather": weather[0]
+    }), 200
+
+@weather_bp.route('/hazards', methods=['POST'])
+@jwt_required()
+def analyze_weather_hazards():
+    """Analyze weather hazards for a route"""
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON in request"}), 400
+    
+    data = request.get_json()
+    
+    # Validate route points
+    if 'route_points' not in data or not isinstance(data['route_points'], list):
+        return jsonify({"error": "Missing or invalid route_points"}), 400
+    
+    route_points = data['route_points']
+    
+    for point in route_points:
+        if 'lat' not in point or 'lng' not in point:
+            return jsonify({"error": "Invalid route point format"}), 400
+    
+    # Get weather hazards
+    hazards = get_weather_hazards(route_points)
+    
+    return jsonify({
+        "hazards": hazards
+    }), 200
+
+@weather_bp.route('/alerts', methods=['GET'])
+@jwt_required()
+def get_weather_alerts():
+    """Get active weather alerts for user's routes"""
+    current_user_id = get_jwt_identity()
+    
+    # Get alerts from service
+    from services.weather_service import get_current_weather_alerts
+    alerts = get_current_weather_alerts(current_user_id)
+    
+    return jsonify({
+        "alerts": alerts
+    }), 200
+EOL
+
+# Restore the original dashboard.py file from the codebase
+echo "Creating api/dashboard.py from the original codebase..."
+cat > api/dashboard.py << 'EOL'
 # backend/api/dashboard.py (COMPLETE CODE)
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -553,3 +742,413 @@ def get_real_time_updates():
         "weather_alerts": weather_alerts,
         "vehicle_updates": vehicle_updates
     }), 200
+EOL
+
+# Create vehicles.py based on the codebase
+echo "Creating api/vehicles.py..."
+cat > api/vehicles.py << 'EOL'
+from flask import Blueprint, request, jsonify, current_app
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from models.vehicle import Vehicle
+from models.telemetry import Telemetry
+from bson import ObjectId, json_util
+import json
+
+vehicles_bp = Blueprint('vehicles', __name__)
+
+def json_response(data):
+    return json.loads(json_util.dumps(data))
+
+@vehicles_bp.route('/', methods=['GET'])
+@jwt_required()
+def get_vehicles():
+    """Get user vehicles"""
+    current_user_id = get_jwt_identity()
+    
+    # Get vehicles
+    vehicles = Vehicle.get_by_user(current_user_id)
+    
+    return jsonify({
+        "vehicles": json_response(vehicles)
+    }), 200
+
+@vehicles_bp.route('/', methods=['POST'])
+@jwt_required()
+def create_vehicle():
+    """Create a new vehicle"""
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON in request"}), 400
+    
+    data = request.get_json()
+    current_user_id = get_jwt_identity()
+    
+    # Validate required fields
+    required_fields = ['name', 'type', 'make', 'model']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({"error": f"Missing {field} field"}), 400
+    
+    # Create vehicle
+    vehicle = Vehicle.create(current_user_id, data)
+    
+    return jsonify({
+        "message": "Vehicle created successfully",
+        "vehicle": json_response(vehicle)
+    }), 201
+
+@vehicles_bp.route('/<vehicle_id>', methods=['GET'])
+@jwt_required()
+def get_vehicle(vehicle_id):
+    """Get vehicle by ID"""
+    current_user_id = get_jwt_identity()
+    
+    # Get vehicle
+    vehicle = Vehicle.get_by_id(vehicle_id)
+    
+    if not vehicle:
+        return jsonify({"error": "Vehicle not found"}), 404
+    
+    # Check if user owns the vehicle (unless admin)
+    from models import db
+    user = db.users.find_one({'_id': ObjectId(current_user_id)})
+    if str(vehicle['user_id']) != current_user_id and user.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Get telemetry data
+    telemetry = Telemetry.get_by_vehicle(vehicle['_id'], limit=100)
+    
+    # Get latest telemetry
+    latest_telemetry = Telemetry.get_latest_by_vehicle(vehicle['_id'])
+    
+    return jsonify({
+        "vehicle": json_response(vehicle),
+        "latest_telemetry": json_response(latest_telemetry),
+        "telemetry": json_response(telemetry)
+    }), 200
+
+@vehicles_bp.route('/<vehicle_id>', methods=['PUT'])
+@jwt_required()
+def update_vehicle(vehicle_id):
+    """Update vehicle"""
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON in request"}), 400
+    
+    data = request.get_json()
+    current_user_id = get_jwt_identity()
+    
+    # Get vehicle
+    vehicle = Vehicle.get_by_id(vehicle_id)
+    
+    if not vehicle:
+        return jsonify({"error": "Vehicle not found"}), 404
+    
+    # Check if user owns the vehicle (unless admin)
+    from models import db
+    user = db.users.find_one({'_id': ObjectId(current_user_id)})
+    if str(vehicle['user_id']) != current_user_id and user.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Update vehicle
+    updated_vehicle = Vehicle.update(vehicle_id, data)
+    
+    return jsonify({
+        "message": "Vehicle updated successfully",
+        "vehicle": json_response(updated_vehicle)
+    }), 200
+
+@vehicles_bp.route('/<vehicle_id>', methods=['DELETE'])
+@jwt_required()
+def delete_vehicle(vehicle_id):
+    """Delete vehicle"""
+    current_user_id = get_jwt_identity()
+    
+    # Get vehicle
+    vehicle = Vehicle.get_by_id(vehicle_id)
+    
+    if not vehicle:
+        return jsonify({"error": "Vehicle not found"}), 404
+    
+    # Check if user owns the vehicle (unless admin)
+    from models import db
+    user = db.users.find_one({'_id': ObjectId(current_user_id)})
+    if str(vehicle['user_id']) != current_user_id and user.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Delete vehicle
+    Vehicle.delete(vehicle_id)
+    
+    return jsonify({
+        "message": "Vehicle deleted successfully"
+    }), 200
+
+@vehicles_bp.route('/<vehicle_id>/maintenance', methods=['POST'])
+@jwt_required()
+def add_maintenance_record(vehicle_id):
+    """Add maintenance record to vehicle"""
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON in request"}), 400
+    
+    data = request.get_json()
+    current_user_id = get_jwt_identity()
+    
+    # Validate required fields
+    required_fields = ['date', 'type', 'description']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({"error": f"Missing {field} field"}), 400
+    
+    # Get vehicle
+    vehicle = Vehicle.get_by_id(vehicle_id)
+    
+    if not vehicle:
+        return jsonify({"error": "Vehicle not found"}), 404
+    
+    # Check if user owns the vehicle (unless admin)
+    from models import db
+    user = db.users.find_one({'_id': ObjectId(current_user_id)})
+    if str(vehicle['user_id']) != current_user_id and user.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Add maintenance record
+    updated_vehicle = Vehicle.add_maintenance_record(vehicle_id, data)
+    
+    return jsonify({
+        "message": "Maintenance record added successfully",
+        "vehicle": json_response(updated_vehicle)
+    }), 200
+
+@vehicles_bp.route('/<vehicle_id>/telemetry', methods=['POST'])
+@jwt_required()
+def add_telemetry(vehicle_id):
+    """Add telemetry data for a vehicle"""
+    if not request.is_json:
+        return jsonify({"error": "Missing JSON in request"}), 400
+    
+    data = request.get_json()
+    current_user_id = get_jwt_identity()
+    
+    # Get vehicle
+    vehicle = Vehicle.get_by_id(vehicle_id)
+    
+    if not vehicle:
+        return jsonify({"error": "Vehicle not found"}), 404
+    
+    # Check if user owns the vehicle (unless admin)
+    from models import db
+    user = db.users.find_one({'_id': ObjectId(current_user_id)})
+    if str(vehicle['user_id']) != current_user_id and user.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Extract route_id if provided
+    route_id = data.pop('route_id', None)
+    
+    # Add telemetry record
+    telemetry = Telemetry.add_record(vehicle_id, route_id, data)
+    
+    # Emit real-time update via Socket.IO
+    from app import socketio
+    socketio.emit(f'vehicle_update_{vehicle_id}', {
+        'telemetry': json_response(telemetry)
+    })
+    
+    return jsonify({
+        "message": "Telemetry data added successfully",
+        "telemetry": json_response(telemetry)
+    }), 201
+
+@vehicles_bp.route('/<vehicle_id>/telemetry', methods=['GET'])
+@jwt_required()
+def get_telemetry(vehicle_id):
+    """Get telemetry data for a vehicle"""
+    current_user_id = get_jwt_identity()
+    
+    # Parse query parameters
+    limit = int(request.args.get('limit', 100))
+    skip = int(request.args.get('skip', 0))
+    
+    # Get vehicle
+    vehicle = Vehicle.get_by_id(vehicle_id)
+    
+    if not vehicle:
+        return jsonify({"error": "Vehicle not found"}), 404
+    
+    # Check if user owns the vehicle (unless admin)
+    from models import db
+    user = db.users.find_one({'_id': ObjectId(current_user_id)})
+    if str(vehicle['user_id']) != current_user_id and user.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Get telemetry data
+    telemetry = Telemetry.get_by_vehicle(vehicle_id, limit=limit, skip=skip)
+    
+    return jsonify({
+        "telemetry": json_response(telemetry),
+        "count": len(telemetry),
+        "limit": limit,
+        "skip": skip
+    }), 200
+EOL
+
+# Update the app.py file to work with the original API modules
+echo "Updating app.py to work with original API modules..."
+cat > app.py << 'EOL'
+#!/usr/bin/env python
+# backend/app.py (Modified - Final Version)
+from flask import Flask, jsonify
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+from flask_socketio import SocketIO
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import os
+import logging
+from logging.handlers import RotatingFileHandler
+from apscheduler.schedulers.background import BackgroundScheduler
+
+from config import (
+    APP_ENV, DEBUG, SECRET_KEY, JWT_SECRET_KEY, 
+    MONGO_URI, RATE_LIMIT, REDIS_URL
+)
+
+# Initialize Flask app
+app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_KEY
+app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
+app.config['MONGO_URI'] = MONGO_URI
+app.config['DEBUG'] = DEBUG
+
+# Setup CORS
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Initialize JWT
+jwt = JWTManager(app)
+
+# Initialize MongoDB by importing and calling the init_db function
+from models import init_db
+db = init_db(app)
+
+# Initialize Socket.IO with Redis for scaling
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', message_queue=REDIS_URL)
+
+# Setup rate limiting
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[RATE_LIMIT['default']],
+    storage_uri=REDIS_URL
+)
+
+# Configure logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+
+file_handler = RotatingFileHandler('logs/jrm_system.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('JRM System startup')
+
+# Initialize scheduler for background tasks
+scheduler = BackgroundScheduler()
+
+# Import and register blueprints
+from api.auth import auth_bp, apply_rate_limits
+
+# Register auth blueprint and apply rate limits
+app.register_blueprint(auth_bp, url_prefix='/api/auth')
+apply_rate_limits(app)
+
+# Import and register other blueprints if they exist
+try:
+    from api.routes import routes_bp
+    app.register_blueprint(routes_bp, url_prefix='/api/routes')
+except ImportError:
+    app.logger.warning("routes_bp blueprint not available")
+
+try:
+    from api.risk_analysis import risk_bp
+    app.register_blueprint(risk_bp, url_prefix='/api/risk')
+except ImportError:
+    app.logger.warning("risk_bp blueprint not available")
+
+try:
+    from api.weather import weather_bp
+    app.register_blueprint(weather_bp, url_prefix='/api/weather')
+except ImportError:
+    app.logger.warning("weather_bp blueprint not available")
+
+try:
+    from api.vehicles import vehicles_bp
+    app.register_blueprint(vehicles_bp, url_prefix='/api/vehicles')
+except ImportError:
+    app.logger.warning("vehicles_bp blueprint not available")
+
+try:
+    from api.dashboard import dashboard_bp
+    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+except ImportError:
+    app.logger.warning("dashboard_bp blueprint not available")
+
+# Error handlers
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Not found'}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    app.logger.error(f'Server Error: {error}')
+    return jsonify({'error': 'Internal server error'}), 500
+
+# Schedule background tasks
+try:
+    from services.accident_prediction import update_accident_model
+    from services.weather_service import update_weather_data
+    from services.route_safety import update_route_safety
+    from services.eta_optimizer import update_eta_model
+
+    def init_scheduler():
+        try:
+            scheduler.add_job(update_accident_model, 'interval', hours=24)
+            scheduler.add_job(update_weather_data, 'interval', minutes=30)
+            scheduler.add_job(update_route_safety, 'interval', hours=168)  # weekly
+            scheduler.add_job(update_eta_model, 'interval', hours=1)
+            
+            # Start the scheduler
+            scheduler.start()
+            app.logger.info("Background scheduler started successfully")
+        except Exception as e:
+            app.logger.error(f"Error starting scheduler: {str(e)}")
+except ImportError:
+    app.logger.warning("Some background task modules are not available")
+    
+    def init_scheduler():
+        app.logger.warning("Scheduler initialization skipped due to missing modules")
+
+# Socket.IO events
+@socketio.on('connect')
+def handle_connect():
+    app.logger.info('Client connected')
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    app.logger.info('Client disconnected')
+
+@socketio.on('subscribe')
+def handle_subscribe(data):
+    """Handle subscription to real-time updates for a specific route or vehicle"""
+    if 'route_id' in data:
+        socketio.emit('subscription_success', {'message': f"Subscribed to route {data['route_id']}"})
+    elif 'vehicle_id' in data:
+        socketio.emit('subscription_success', {'message': f"Subscribed to vehicle {data['vehicle_id']}"})
+
+if __name__ == '__main__':
+    init_scheduler()
+    socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=DEBUG)
+EOL
+
+echo "Restored original API files from the codebase."
+echo "Try running the application with: python run.py"

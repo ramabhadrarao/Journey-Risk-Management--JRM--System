@@ -1,13 +1,11 @@
-# backend/models/user.py
+# Fix for models/user.py
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app
 from bson.objectid import ObjectId
-from . import db
+from models import db
 
 class User:
-    collection = db.users
-    
     @staticmethod
     def create(username, email, password, role='user', company=None):
         """Create a new user"""

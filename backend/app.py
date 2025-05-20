@@ -1,9 +1,9 @@
-# backend/app.py
+#!/usr/bin/env python
+# backend/app.py (Modified - Final Version)
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
-from flask_pymongo import PyMongo
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import os
@@ -29,20 +29,29 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 # Initialize JWT
 jwt = JWTManager(app)
 
-# Initialize MongoDB
-mongo = PyMongo(app)
-db = mongo.db
+# Initialize MongoDB by importing and calling the init_db function
+from models import init_db
+db = init_db(app)
 
 # Initialize Socket.IO with Redis for scaling
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', message_queue=REDIS_URL)
+try:
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', message_queue=REDIS_URL)
+except Exception as e:
+    app.logger.warning(f"Error initializing SocketIO with Redis: {str(e)}")
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 # Setup rate limiting
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=[RATE_LIMIT['default']],
-    storage_uri=REDIS_URL
-)
+try:
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=[RATE_LIMIT['default']],
+        storage_uri=REDIS_URL
+    )
+    app.limiter = limiter  # Attach limiter to app for access in blueprints
+except Exception as e:
+    app.logger.warning(f"Error initializing rate limiter: {str(e)}")
+    app.limiter = None
 
 # Configure logging
 if not os.path.exists('logs'):
@@ -61,20 +70,50 @@ app.logger.info('JRM System startup')
 # Initialize scheduler for background tasks
 scheduler = BackgroundScheduler()
 
-# Register blueprints
-from api.auth import auth_bp
-from api.routes import routes_bp
-from api.risk_analysis import risk_bp
-from api.weather import weather_bp
-from api.vehicles import vehicles_bp
-from api.dashboard import dashboard_bp
+# Import and register blueprints
+from api.auth import auth_bp, apply_rate_limits
 
+# Register auth blueprint
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
-app.register_blueprint(routes_bp, url_prefix='/api/routes')
-app.register_blueprint(risk_bp, url_prefix='/api/risk')
-app.register_blueprint(weather_bp, url_prefix='/api/weather')
-app.register_blueprint(vehicles_bp, url_prefix='/api/vehicles')
-app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+
+# Apply rate limits to auth blueprint
+apply_rate_limits(app)
+
+# Import and register other blueprints if they exist
+try:
+    from api.routes import routes_bp
+    app.register_blueprint(routes_bp, url_prefix='/api/routes')
+    app.logger.info("Registered routes_bp blueprint")
+except ImportError as e:
+    app.logger.warning(f"routes_bp blueprint not available: {str(e)}")
+
+try:
+    from api.risk_analysis import risk_bp
+    app.register_blueprint(risk_bp, url_prefix='/api/risk')
+    app.logger.info("Registered risk_bp blueprint")
+except ImportError as e:
+    app.logger.warning(f"risk_bp blueprint not available: {str(e)}")
+
+try:
+    from api.weather import weather_bp
+    app.register_blueprint(weather_bp, url_prefix='/api/weather')
+    app.logger.info("Registered weather_bp blueprint")
+except ImportError as e:
+    app.logger.warning(f"weather_bp blueprint not available: {str(e)}")
+
+try:
+    from api.vehicles import vehicles_bp
+    app.register_blueprint(vehicles_bp, url_prefix='/api/vehicles')
+    app.logger.info("Registered vehicles_bp blueprint")
+except ImportError as e:
+    app.logger.warning(f"vehicles_bp blueprint not available: {str(e)}")
+
+try:
+    from api.dashboard import dashboard_bp
+    app.register_blueprint(dashboard_bp, url_prefix='/api/dashboard')
+    app.logger.info("Registered dashboard_bp blueprint")
+except ImportError as e:
+    app.logger.warning(f"dashboard_bp blueprint not available: {str(e)}")
 
 # Error handlers
 @app.errorhandler(404)
@@ -87,19 +126,29 @@ def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
 # Schedule background tasks
-from services.accident_prediction import update_accident_model
-from services.weather_service import update_weather_data
-from services.route_safety import update_route_safety
-from services.eta_optimizer import update_eta_model
+try:
+    from services.accident_prediction import update_accident_model
+    from services.weather_service import update_weather_data
+    from services.route_safety import update_route_safety
+    from services.eta_optimizer import update_eta_model
 
-def init_scheduler():
-    scheduler.add_job(update_accident_model, 'interval', hours=24)
-    scheduler.add_job(update_weather_data, 'interval', minutes=30)
-    scheduler.add_job(update_route_safety, 'interval', hours=168)  # weekly
-    scheduler.add_job(update_eta_model, 'interval', hours=1)
+    def init_scheduler():
+        try:
+            scheduler.add_job(update_accident_model, 'interval', hours=24)
+            scheduler.add_job(update_weather_data, 'interval', minutes=30)
+            scheduler.add_job(update_route_safety, 'interval', hours=168)  # weekly
+            scheduler.add_job(update_eta_model, 'interval', hours=1)
+            
+            # Start the scheduler
+            scheduler.start()
+            app.logger.info("Background scheduler started successfully")
+        except Exception as e:
+            app.logger.error(f"Error starting scheduler: {str(e)}")
+except ImportError:
+    app.logger.warning("Some background task modules are not available")
     
-    # Start the scheduler
-    scheduler.start()
+    def init_scheduler():
+        app.logger.warning("Scheduler initialization skipped due to missing modules")
 
 # Socket.IO events
 @socketio.on('connect')
@@ -118,6 +167,14 @@ def handle_subscribe(data):
     elif 'vehicle_id' in data:
         socketio.emit('subscription_success', {'message': f"Subscribed to vehicle {data['vehicle_id']}"})
 
+# At the end of your app.py file, make sure it looks like this:
 if __name__ == '__main__':
     init_scheduler()
-    socketio.run(app, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=DEBUG)
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
+    # socketio.run(
+    #     app,
+    #     host='0.0.0.0',  # Important: This binds to all interfaces
+    #     port=int(os.environ.get('PORT', 5000)),
+    #     debug=True
+    # )

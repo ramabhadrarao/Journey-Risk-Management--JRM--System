@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journey Risk Management System - Demo</title>
+    
+    <!-- Tabler UI CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.22.0/tabler-icons.min.css">
+    
+    <style>
+        /* Custom styles */
+        .risk-high {
+            color: #d63939;
+        }
+        .risk-medium {
+            color: #f59f00;
+        }
+        .risk-low {
+            color: #2fb344;
+        }
+        .demo-map {
+            background-image: url('https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/78.4867,17.3850,10,0/800x400?access_token=pk.dummy');
+            background-size: cover;
+            background-position: center;
+            height: 400px;
+            border-radius: 4px;
+        }
+        .chart-placeholder {
+            background-color: #f1f5f9;
+            border-radius: 4px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <!-- Sidebar -->
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <h1 class="navbar-brand navbar-brand-autodark">
+                    <a href=".">
+                        JRM System
+                    </a>
+                </h1>
+                <div class="collapse navbar-collapse" id="sidebar-menu">
+                    <ul class="navbar-nav pt-lg-3">
+                        <li class="nav-item active">
+                            <a class="nav-link" href="#">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-dashboard"></i>
+                                </span>
+                                <span class="nav-link-title">
+                                    Dashboard
+                                </span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="risk.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-alert-triangle"></i>
+                                </span>
+                                <span class="nav-link-title">
+                                    Risk Analysis
+                                </span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-car"></i>
+                                </span>
+                                <span class="nav-link-title">
+                                    Vehicle Analysis
+                                </span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="route.html">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-chart-bar"></i>
+                                </span>
+                                <span class="nav-link-title">
+                                    Route Comparison
+                                </span>
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-map"></i>
+                                </span>
+                                <span class="nav-link-title">
+                                    Routes
+                                </span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="#">
+                                    All Routes
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    Create New Route
+                                </a>
+                            </div>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#navbar-base" data-bs-toggle="dropdown" data-bs-auto-close="outside" role="button" aria-expanded="false">
+                                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                    <i class="ti ti-truck"></i>
+                                </span>
+                                <span class="nav-link-title">
+                                    Vehicles
+                                </span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="#">
+                                    All Vehicles
+                                </a>
+                                <a class="dropdown-item" href="#">
+                                    Add New Vehicle
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+        
+        <div class="page-wrapper">
+            <!-- Header -->
+            <header class="navbar navbar-expand-md d-print-none">
+                <div class="container-xl">
+                    <div class="navbar-nav flex-row order-md-last">
+                        <div class="nav-item dropdown">
+                            <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
+                                <div class="d-none d-xl-block ps-2">
+                                    <div>Jane Smith</div>
+                                    <div class="mt-1 small text-muted">Administrator</div>
+                                </div>
+                                <span class="avatar avatar-sm" style="background-image: url(https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y)"></span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                <a href="#" class="dropdown-item">Profile</a>
+                                <div class="dropdown-divider"></div>
+                                <a href="#" class="dropdown-item">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main content -->
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="page-header d-print-none">
+                        <div class="container-xl">
+                            <div class="row g-2 align-items-center">
+                                <div class="col">
+                                    <h2 class="page-title">
+                                        Dashboard
+                                    </h2>
+                                    <div class="text-muted mt-1">Journey Risk Management Overview</div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="btn-list">
+                                        <span class="d-none d-sm-inline">
+                                            <a href="#" class="btn">
+                                                Last Updated: May 20, 2025 10:30 AM
+                                            </a>
+                                        </span>
+                                        <a href="#" class="btn btn-primary d-none d-sm-inline-block">
+                                            <i class="ti ti-refresh"></i>
+                                            Refresh
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats cards -->
+                    <div class="row row-deck row-cards mt-3">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Total Routes</div>
+                                        <div class="ms-auto lh-1">
+                                            <div class="dropdown">
+                                                <a class="dropdown-toggle text-muted" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Last 30 days</a>
+                                                <div class="dropdown-menu dropdown-menu-end">
+                                                    <a class="dropdown-item active" href="#">Last 30 days</a>
+                                                    <a class="dropdown-item" href="#">Last 90 days</a>
+                                                    <a class="dropdown-item" href="#">Last year</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="h1 mb-3">752</div>
+                                    <div class="d-flex mb-2">
+                                        <div>Route completion rate</div>
+                                        <div class="ms-auto">
+                                            <span class="text-green d-inline-flex align-items-center lh-1">
+                                                98% <i class="ti ti-trending-up"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar bg-primary" style="width: 98%" role="progressbar" aria-valuenow="98" aria-valuemin="0" aria-valuemax="100" aria-label="98% Complete">
+                                            <span class="visually-hidden">98% Complete</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Total Distance</div>
+                                        <div class="ms-auto lh-1">
+                                            <div class="dropdown">
+                                                <a class="dropdown-toggle text-muted" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Last 30 days</a>
+                                                <div class="dropdown-menu dropdown-menu-end">
+                                                    <a class="dropdown-item active" href="#">Last 30 days</a>
+                                                    <a class="dropdown-item" href="#">Last 90 days</a>
+                                                    <a class="dropdown-item" href="#">Last year</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="h1 mb-3">32,548 km</div>
+                                    <div class="d-flex mb-2">
+                                        <div>Average per route</div>
+                                        <div class="ms-auto">
+                                            <span class="text-muted d-inline-flex align-items-center lh-1">
+                                                43.3 km
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar bg-primary" style="width: 75%" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" aria-label="75% Complete">
+                                            <span class="visually-hidden">75% Complete</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Total Duration</div>
+                                        <div class="ms-auto lh-1">
+                                            <div class="dropdown">
+                                                <a class="dropdown-toggle text-muted" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Last 30 days</a>
+                                                <div class="dropdown-menu dropdown-menu-end">
+                                                    <a class="dropdown-item active" href="#">Last 30 days</a>
+                                                    <a class="dropdown-item" href="#">Last 90 days</a>
+                                                    <a class="dropdown-item" href="#">Last year</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="h1 mb-3">824.5 hrs</div>
+                                    <div class="d-flex mb-2">
+                                        <div>Average per route</div>
+                                        <div class="ms-auto">
+                                            <span class="text-muted d-inline-flex align-items-center lh-1">
+                                                65.8 mins
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar bg-primary" style="width: 60%" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" aria-label="60% Complete">
+                                            <span class="visually-hidden">60% Complete</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Total Vehicles</div>
+                                        <div class="ms-auto lh-1">
+                                            <div class="dropdown">
+                                                <a class="dropdown-toggle text-muted" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Active</a>
+                                                <div class="dropdown-menu dropdown-menu-end">
+                                                    <a class="dropdown-item active" href="#">Active</a>
+                                                    <a class="dropdown-item" href="#">All</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="h1 mb-3">28</div>
+                                    <div class="d-flex mb-2">
+                                        <div>Vehicle availability</div>
+                                        <div class="ms-auto">
+                                            <span class="text-green d-inline-flex align-items-center lh-1">
+                                                92% <i class="ti ti-trending-up"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="progress progress-sm">
+                                        <div class="progress-bar bg-primary" style="width: 92%" role="progressbar" aria-valuenow="92" aria-valuemin="0" aria-valuemax="100" aria-label="92% Complete">
+                                            <span class="visually-hidden">92% Complete</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk distribution and points -->
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Risk Distribution</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        <div class="w-100">
+                                            <div class="card-tabs">
+                                                <ul class="nav nav-tabs">
+                                                    <li class="nav-item"><a href="#tab-1" class="nav-link active" data-bs-toggle="tab">Pie Chart</a></li>
+                                                    <li class="nav-item"><a href="#tab-2" class="nav-link" data-bs-toggle="tab">Table</a></li>
+                                                </ul>
+                                                <div class="tab-content">
+                                                    <div id="tab-1" class="tab-pane active show">
+                                                        <div class="chart-placeholder">
+                                                            <div class="text-center">
+                                                                <div class="h3 mb-2">Risk Distribution</div>
+                                                                <div class="row text-center">
+                                                                    <div class="col">
+                                                                        <div class="text-danger h5">15%</div>
+                                                                        <div class="text-muted">High</div>
+                                                                    </div>
+                                                                    <div class="col">
+                                                                        <div class="text-warning h5">28%</div>
+                                                                        <div class="text-muted">Medium</div>
+                                                                    </div>
+                                                                    <div class="col">
+                                                                        <div class="text-success h5">52%</div>
+                                                                        <div class="text-muted">Low</div>
+                                                                    </div>
+                                                                    <div class="col">
+                                                                        <div class="text-muted h5">5%</div>
+                                                                        <div class="text-muted">Unknown</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="tab-2" class="tab-pane">
+                                                        <table class="table table-vcenter">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Risk Level</th>
+                                                                    <th>Count</th>
+                                                                    <th>Percentage</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td><span class="badge bg-danger">High</span></td>
+                                                                    <td>113</td>
+                                                                    <td>15%</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><span class="badge bg-warning">Medium</span></td>
+                                                                    <td>210</td>
+                                                                    <td>28%</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><span class="badge bg-success">Low</span></td>
+                                                                    <td>391</td>
+                                                                    <td>52%</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td><span class="badge bg-secondary">Unknown</span></td>
+                                                                    <td>38</td>
+                                                                    <td>5%</td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Risk Points by Type</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-placeholder">
+                                        <div class="text-center">
+                                            <div class="h3 mb-3">Risk Points Distribution</div>
+                                            <div class="row text-center g-3">
+                                                <div class="col-6 col-md-4">
+                                                    <div class="h2 mb-0">182</div>
+                                                    <div class="text-muted">Accident</div>
+                                                </div>
+                                                <div class="col-6 col-md-4">
+                                                    <div class="h2 mb-0">143</div>
+                                                    <div class="text-muted">Weather</div>
+                                                </div>
+                                                <div class="col-6 col-md-4">
+                                                    <div class="h2 mb-0">97</div>
+                                                    <div class="text-muted">Elevation</div>
+                                                </div>
+                                                <div class="col-6 col-md-4">
+                                                    <div class="h2 mb-0">76</div>
+                                                    <div class="text-muted">Blind Spot</div>
+                                                </div>
+                                                <div class="col-6 col-md-4">
+                                                    <div class="h2 mb-0">48</div>
+                                                    <div class="text-muted">Network</div>
+                                                </div>
+                                                <div class="col-6 col-md-4">
+                                                    <div class="h2 mb-0">35</div>
+                                                    <div class="text-muted">Eco Zone</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent routes table -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Recent Routes</h3>
+                                    <div class="card-actions">
+                                        <a href="#" class="btn btn-primary">
+                                            View All Routes
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body border-bottom py-3">
+                                    <div class="d-flex">
+                                        <div class="text-muted">
+                                            Show
+                                            <div class="mx-2 d-inline-block">
+                                                <select class="form-select form-select-sm" aria-label="Routes per page">
+                                                    <option value="5" selected>5</option>
+                                                    <option value="10">10</option>
+                                                    <option value="20">20</option>
+                                                    <option value="50">50</option>
+                                                </select>
+                                            </div>
+                                            entries
+                                        </div>
+                                        <div class="ms-auto text-muted">
+                                            Search:
+                                            <div class="ms-2 d-inline-block">
+                                                <input type="text" class="form-control form-control-sm" aria-label="Search routes">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table card-table table-vcenter text-nowrap datatable">
+                                        <thead>
+                                            <tr>
+                                                <th>Route Name</th>
+                                                <th>Origin</th>
+                                                <th>Destination</th>
+                                                <th>Distance</th>
+                                                <th>Duration</th>
+                                                <th>Risk Level</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Daily Office Commute</td>
+                                                <td>Hitech City, Hyderabad</td>
+                                                <td>Gachibowli, Hyderabad</td>
+                                                <td>12.5 km</td>
+                                                <td>35 mins</td>
+                                                <td><span class="badge bg-warning">Medium</span></td>
+                                                <td>
+                                                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Airport Transfer</td>
+                                                <td>RGIA, Shamshabad</td>
+                                                <td>Banjara Hills, Hyderabad</td>
+                                                <td>28.3 km</td>
+                                                <td>52 mins</td>
+                                                <td><span class="badge bg-danger">High</span></td>
+                                                <td>
+                                                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Weekend Shopping</td>
+                                                <td>Kondapur, Hyderabad</td>
+                                                <td>Inorbit Mall, Hyderabad</td>
+                                                <td>5.2 km</td>
+                                                <td>15 mins</td>
+                                                <td><span class="badge bg-success">Low</span></td>
+                                                <td>
+                                                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Client Meeting</td>
+                                                <td>Hitech City, Hyderabad</td>
+                                                <td>Madhapur, Hyderabad</td>
+                                                <td>3.7 km</td>
+                                                <td>12 mins</td>
+                                                <td><span class="badge bg-success">Low</span></td>
+                                                <td>
+                                                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>Secunderabad Trip</td>
+                                                <td>Hitech City, Hyderabad</td>
+                                                <td>Secunderabad, Telangana</td>
+                                                <td>18.6 km</td>
+                                                <td>45 mins</td>
+                                                <td><span class="badge bg-warning">Medium</span></td>
+                                                <td>
+                                                    <a href="#" class="btn btn-sm btn-primary">View</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="card-footer d-flex align-items-center">
+                                    <p class="m-0 text-muted">Showing <span>1</span> to <span>5</span> of <span>25</span> entries</p>
+                                    <ul class="pagination m-0 ms-auto">
+                                        <li class="page-item disabled">
+                                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">
+                                                <i class="ti ti-chevron-left"></i>
+                                                prev
+                                            </a>
+                                        </li>
+                                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">4</a></li>
+                                        <li class="page-item"><a class="page-link" href="#">5</a></li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="#">
+                                                next <i class="ti ti-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vehicle map and weather alerts -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Vehicle Locations</h3>
+                                    <div class="card-actions">
+                                        <a href="#" class="btn btn-primary">
+                                            View All Vehicles
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="demo-map"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Weather Alerts</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-warning" role="alert">
+                                        <div class="d-flex">
+                                            <div>
+                                                <i class="ti ti-alert-triangle"></i>
+                                            </div>
+                                            <div class="ms-3">
+                                                <h4 class="alert-title">Weather Alerts Detected</h4>
+                                                <div class="text-muted">The following routes have potential weather hazards:</div>
+                                                <ul class="mt-2">
+                                                    <li>
+                                                        <strong>Airport Transfer</strong>: Heavy rainfall reducing visibility and traction
+                                                        <a href="#" class="btn btn-sm btn-warning ms-2">
+                                                            View Route
+                                                        </a>
+                                                    </li>
+                                                    <li>
+                                                        <strong>Secunderabad Trip</strong>: Moderate precipitation may affect road conditions
+                                                        <a href="#" class="btn btn-sm btn-warning ms-2">
+                                                            View Route
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-lg-auto ms-lg-auto">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item"><a href="#" class="link-secondary">Documentation</a></li>
+                                <li class="list-inline-item"><a href="#" class="link-secondary">Help Center</a></li>
+                                <li class="list-inline-item"><a href="#" class="link-secondary">Contact</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item">
+                                    Copyright &copy; 2025
+                                    <a href="." class="link-secondary">Journey Risk Management System</a>.
+                                    All rights reserved.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+    
+    <!-- Tabler UI JS from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
+    
+    <!-- Demo Script for Charts (just for appearance) -->
+    <script>
+        // This would normally be replaced with actual chart data
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize any interactive elements if needed
+            console.log('Dashboard demo initialized');
+        });
+    </script>
+</body>
+</html>
