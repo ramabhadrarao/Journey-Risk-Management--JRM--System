@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Vehicles - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Vehicles
+                        </h2>
+                        <div class="text-muted mt-1">Manage your vehicle fleet</div>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <div class="btn-list">
+                            <a href="{{ url_for('vehicles.create_vehicle') }}" class="btn btn-primary d-none d-sm-inline-block">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M12 5l0 14" />
+                                    <path d="M5 12l14 0" />
+                                </svg>
+                                Add New Vehicle
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Vehicle List</h3>
+            </div>
+            <div class="card-body">
+                <div class="row row-cards">
+                    {% for vehicle in vehicles %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card">
+                            <div class="card-status-top bg-primary"></div>
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <span class="avatar avatar-md bg-primary-lt">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                                <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="col">
+                                        <h3 class="card-title mb-1">{{ vehicle.name }}</h3>
+                                        <div class="text-muted">
+                                            {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="text-muted">Registration</div>
+                                            <div>{{ vehicle.registration }}</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-muted">Fuel Type</div>
+                                            <div>{{ vehicle.fuel_type|title }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <div class="text-muted">Last Service</div>
+                                            <div>{{ vehicle.maintenance.last_service_date if vehicle.maintenance.last_service_date else 'N/A' }}</div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-muted">Next Service</div>
+                                            <div>{{ vehicle.maintenance.next_service_date if vehicle.maintenance.next_service_date else 'N/A' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 d-flex">
+                                    <a href="{{ url_for('vehicles.view_vehicle', vehicle_id=vehicle._id) }}" class="btn btn-primary me-2">View Details</a>
+                                    <div class="dropdown">
+                                        <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                            Actions
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a href="{{ url_for('vehicles.edit_vehicle', vehicle_id=vehicle._id) }}" class="dropdown-item">
+                                                Edit
+                                            </a>
+                                            <a href="{{ url_for('vehicles.add_maintenance', vehicle_id=vehicle._id) }}" class="dropdown-item">
+                                                Add Maintenance
+                                            </a>
+                                            <form action="{{ url_for('vehicles.delete_vehicle', vehicle_id=vehicle._id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this vehicle?');">
+                                                <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not vehicles %}
+                    <div class="col-12">
+                        <div class="empty">
+                            <div class="empty-img">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-car" width="64" height="64" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                    <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                    <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
+                                </svg>
+                            </div>
+                            <p class="empty-title">No vehicles found</p>
+                            <p class="empty-subtitle text-muted">
+                                Start by adding a new vehicle to your fleet.
+                            </p>
+                            <div class="empty-action">
+                                <a href="{{ url_for('vehicles.create_vehicle') }}" class="btn btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M12 5l0 14" />
+                                        <path d="M5 12l14 0" />
+                                    </svg>
+                                    Add New Vehicle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

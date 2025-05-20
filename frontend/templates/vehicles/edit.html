@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Vehicle - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Edit Vehicle
+                        </h2>
+                        <div class="text-muted mt-1">Update vehicle information for {{ vehicle.name }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Vehicle Details</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('vehicles.edit_vehicle', vehicle_id=vehicle._id) }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label required">Vehicle Name</label>
+                                <input type="text" class="form-control" name="name" value="{{ vehicle.name }}" required>
+                                <small class="form-hint">A descriptive name for this vehicle</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Vehicle Type</label>
+                                <select name="type" class="form-select" required>
+                                    <option value="car" {% if vehicle.type == 'car' %}selected{% endif %}>Car</option>
+                                    <option value="truck" {% if vehicle.type == 'truck' %}selected{% endif %}>Truck</option>
+                                    <option value="bus" {% if vehicle.type == 'bus' %}selected{% endif %}>Bus</option>
+                                    <option value="motorcycle" {% if vehicle.type == 'motorcycle' %}selected{% endif %}>Motorcycle</option>
+                                    <option value="bicycle" {% if vehicle.type == 'bicycle' %}selected{% endif %}>Bicycle</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Make</label>
+                                <input type="text" class="form-control" name="make" value="{{ vehicle.make }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Model</label>
+                                <input type="text" class="form-control" name="model" value="{{ vehicle.model }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Year</label>
+                                <input type="number" class="form-control" name="year" min="1900" max="2099" step="1" value="{{ vehicle.year }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label required">Registration Number</label>
+                                <input type="text" class="form-control" name="registration" value="{{ vehicle.registration }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Fuel Type</label>
+                                <select name="fuel_type" class="form-select" required>
+                                    <option value="petrol" {% if vehicle.fuel_type == 'petrol' %}selected{% endif %}>Petrol</option>
+                                    <option value="diesel" {% if vehicle.fuel_type == 'diesel' %}selected{% endif %}>Diesel</option>
+                                    <option value="electric" {% if vehicle.fuel_type == 'electric' %}selected{% endif %}>Electric</option>
+                                    <option value="hybrid" {% if vehicle.fuel_type == 'hybrid' %}selected{% endif %}>Hybrid</option>
+                                    <option value="lpg" {% if vehicle.fuel_type == 'lpg' %}selected{% endif %}>LPG</option>
+                                    <option value="cng" {% if vehicle.fuel_type == 'cng' %}selected{% endif %}>CNG</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Fuel Tank Capacity (liters)</label>
+                                <input type="number" class="form-control" name="tank_capacity" min="0" step="0.1" value="{{ vehicle.tank_capacity }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Average Mileage (km/l)</label>
+                                <input type="number" class="form-control" name="average_mileage" min="0" step="0.1" value="{{ vehicle.average_mileage }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Last Service Date</label>
+                                <input type="date" class="form-control" name="last_service_date" value="{{ vehicle.maintenance.last_service_date|string|truncate(10, True, '') if vehicle.maintenance.last_service_date else '' }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Next Service Date</label>
+                                <input type="date" class="form-control" name="next_service_date" value="{{ vehicle.maintenance.next_service_date|string|truncate(10, True, '') if vehicle.maintenance.next_service_date else '' }}">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Last Service Mileage (km)</label>
+                                <input type="number" class="form-control" name="last_service_mileage" min="0" step="1" value="{{ vehicle.maintenance.last_service_mileage }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-footer">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <a href="{{ url_for('vehicles.view_vehicle', vehicle_id=vehicle._id) }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

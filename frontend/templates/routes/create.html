@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Create Route - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Create New Route
+                        </h2>
+                        <div class="text-muted mt-1">Create a new route for risk analysis</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Route Details</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('routes.create_route') }}" method="post">
+                    <div class="mb-3">
+                        <label class="form-label required">Route Name</label>
+                        <input type="text" class="form-control" name="name" required>
+                        <small class="form-hint">A descriptive name for this route</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">Origin Address</label>
+                        <input type="text" class="form-control" name="origin_address" id="origin_address" required>
+                        <small class="form-hint">Starting point of the route</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label required">Destination Address</label>
+                        <input type="text" class="form-control" name="destination_address" id="destination_address" required>
+                        <small class="form-hint">End point of the route</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Vehicle (Optional)</label>
+                        <select name="vehicle_id" class="form-select">
+                            <option value="">Select a vehicle</option>
+                            {% for vehicle in vehicles %}
+                            <option value="{{ vehicle._id }}">{{ vehicle.name }} ({{ vehicle.make }} {{ vehicle.model }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-hint">Associate this route with a vehicle for better analytics</small>
+                    </div>
+                    
+                    <div class="form-footer">
+                        <button type="submit" class="btn btn-primary">Create Route</button>
+                        <a href="{{ url_for('routes.list_routes') }}" class="btn btn-secondary ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Route Preview</h3>
+            </div>
+            <div class="card-body">
+                <div id="route-map" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
+<script>
+    // Initialize map
+    const map = L.map('route-map').setView([20.5937, 78.9629], 5);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Route markers
+    let originMarker = null;
+    let destinationMarker = null;
+    let routeLine = null;
+    
+    // Origin geocoding function
+    function geocodeOrigin() {
+        const address = document.getElementById('origin_address').value;
+        if (!address) return;
+        
+        // Use Nominatim for geocoding
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    
+                    // Add/update marker
+                    if (originMarker) {
+                        originMarker.setLatLng([location.lat, location.lon]);
+                    } else {
+                        originMarker = L.marker([location.lat, location.lon], {
+                            draggable: true
+                        }).addTo(map)
+                        .bindPopup('Origin: ' + address)
+                        .on('dragend', function() {
+                            const latlng = originMarker.getLatLng();
+                            // Update route if both markers exist
+                            if (originMarker && destinationMarker) {
+                                drawRoute();
+                            }
+                        });
+                    }
+                    
+                    // Update map view
+                    updateMapView();
+                    
+                    // Update route if both markers exist
+                    if (originMarker && destinationMarker) {
+                        drawRoute();
+                    }
+                }
+            })
+            .catch(error => console.error('Error geocoding address:', error));
+    }
+    
+    // Destination geocoding function
+    function geocodeDestination() {
+        const address = document.getElementById('destination_address').value;
+        if (!address) return;
+        
+        // Use Nominatim for geocoding
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const location = data[0];
+                    
+                    // Add/update marker
+                    if (destinationMarker) {
+                        destinationMarker.setLatLng([location.lat, location.lon]);
+                    } else {
+                        destinationMarker = L.marker([location.lat, location.lon], {
+                            draggable: true
+                        }).addTo(map)
+                        .bindPopup('Destination: ' + address)
+                        .on('dragend', function() {
+                            const latlng = destinationMarker.getLatLng();
+                            // Update route if both markers exist
+                            if (originMarker && destinationMarker) {
+                                drawRoute();
+                            }
+                        });
+                    }
+                    
+                    // Update map view
+                    updateMapView();
+                    
+                    // Update route if both markers exist
+                    if (originMarker && destinationMarker) {
+                        drawRoute();
+                    }
+                }
+            })
+            .catch(error => console.error('Error geocoding address:', error));
+    }
+    
+    // Update map view to show both markers
+    function updateMapView() {
+        const bounds = [];
+        
+        if (originMarker) {
+            bounds.push(originMarker.getLatLng());
+        }
+        
+        if (destinationMarker) {
+            bounds.push(destinationMarker.getLatLng());
+        }
+        
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
+    
+    // Draw route between markers
+    function drawRoute() {
+        if (!originMarker || !destinationMarker) return;
+        
+        const origin = originMarker.getLatLng();
+        const destination = destinationMarker.getLatLng();
+        
+        // Use OSRM to get route
+        fetch(`https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=polyline`)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    const coordinates = L.Polyline.fromEncoded(route.geometry).getLatLngs();
+                    
+                    // Add/update route line
+                    if (routeLine) {
+                        routeLine.setLatLngs(coordinates);
+                    } else {
+                        routeLine = L.polyline(coordinates, {
+                            color: '#206bc4',
+                            weight: 5,
+                            opacity: 0.7
+                        }).addTo(map);
+                    }
+                    
+                    // Show distance and duration
+                    const distance = (route.distance / 1000).toFixed(1);
+                    const duration = Math.round(route.duration / 60);
+                    
+                    routeLine.bindPopup(`Distance: ${distance} km<br>Duration: ${duration} min`).openPopup();
+                }
+            })
+            .catch(error => console.error('Error fetching route:', error));
+    }
+    
+    // Add event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        const originInput = document.getElementById('origin_address');
+        const destinationInput = document.getElementById('destination_address');
+        
+        // Geocode on input blur
+        originInput.addEventListener('blur', geocodeOrigin);
+        destinationInput.addEventListener('blur', geocodeDestination);
+        
+        // Geocode on enter key
+        originInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                geocodeOrigin();
+            }
+        });
+        
+        destinationInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                geocodeDestination();
+            }
+        });
+    });
+    
+    // Add polyline decoding support for OSRM
+    L.Polyline.fromEncoded = function(encodedString) {
+        var points = [];
+        var index = 0, len = encodedString.length;
+        var lat = 0, lng = 0;
+        
+        while (index < len) {
+            var b, shift = 0, result = 0;
+            
+            do {
+                b = encodedString.charAt(index++).charCodeAt(0) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            
+            var dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+            
+            shift = 0;
+            result = 0;
+            
+            do {
+                b = encodedString.charAt(index++).charCodeAt(0) - 63;
+                result |= (b & 0x1f) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            
+            var dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+            
+            points.push(L.latLng(lat * 1e-5, lng * 1e-5));
+        }
+        
+        return L.polyline(points);
+    };
+</script>
+{% endblock %}

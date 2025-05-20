@@ -1,0 +1,825 @@
+{% extends "base.html" %}
+
+{% block title %}View Route - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <div class="page-pretitle">
+                            Route Details
+                        </div>
+                        <h2 class="page-title">
+                            {{ route.name or 'Route ' + route.route_id[:8] }}
+                        </h2>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <div class="btn-list">
+                            {% if route.status == 'processing' or route.status == 'failed' %}
+                            <span class="badge bg-{{ 'warning' if route.status == 'processing' else 'danger' }} me-2">
+                                {{ route.status|title }}
+                            </span>
+                            {% endif %}
+                            
+                            <form action="{{ url_for('routes.regenerate_route', route_id=route.route_id) }}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-primary d-none d-sm-inline-block">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                                        <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                                    </svg>
+                                    Regenerate Analysis
+                                </button>
+                            </form>
+                            
+                            <form action="{{ url_for('routes.delete_route', route_id=route.route_id) }}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this route?');">
+                                <button type="submit" class="btn btn-danger d-none d-sm-inline-block">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M4 7l16 0" />
+                                        <path d="M10 11l0 6" />
+                                        <path d="M14 11l0 6" />
+                                        <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                                        <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                                    </svg>
+                                    Delete Route
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Route Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M3 7l6 -3l6 3l6 -3l0 13l-6 3l-6 -3l-6 3l0 -13" />
+                                    <path d="M9 4l0 13" />
+                                    <path d="M15 7l0 13" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">Origin</div>
+                            <div class="text-muted">{{ route.origin.address }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" />
+                                    <path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">Destination</div>
+                            <div class="text-muted">{{ route.destination.address }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+                                    <path d="M12 12l3 2" />
+                                    <path d="M12 7v5" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">Duration</div>
+                            <div class="text-muted">{{ route.duration }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M19 19h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2z" />
+                                    <path d="M4 9h16" />
+                                    <path d="M16 19v-10" />
+                                    <path d="M14 11h-4v4h4z" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">Distance</div>
+                            <div class="text-muted">{{ route.distance }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                                    <path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
+                                    <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                                    <path d="M17 10h2a2 2 0 0 1 2 2v1" />
+                                    <path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+                                    <path d="M3 13v-1a2 2 0 0 1 2 -2h2" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">Created</div>
+                            <div class="text-muted">{{ route.created_at|string|truncate(16, True, '') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                    <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" />
+                                    <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5" />
+                                </svg>
+                            </span>
+                        </div>
+                        <div class="col">
+                            <div class="font-weight-medium">Vehicle</div>
+                            <div class="text-muted">{{ vehicle.name if vehicle else 'None' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title">Risk Assessment</h3>
+                {% set badge_class = 'bg-success' %}
+                {% if route.risk_level == 'high' %}
+                    {% set badge_class = 'bg-danger' %}
+                {% elif route.risk_level == 'medium' %}
+                    {% set badge_class = 'bg-warning' %}
+                {% endif %}
+                <span class="badge {{ badge_class }} ms-2">{{ route.risk_level|title }}</span>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Risk Score</label>
+                    <div class="progress mb-2">
+                        {% set risk_width = (route.risk_score / 10 * 100)|int %}
+                        {% set risk_color = 'green' %}
+                        {% if route.risk_score >= 8 %}
+                            {% set risk_color = 'red' %}
+                        {% elif route.risk_score >= 6 %}
+                            {% set risk_color = 'orange' %}
+                        {% endif %}
+                        <div class="progress-bar bg-{{ risk_color }}" style="width: {{ risk_width }}%" role="progressbar" aria-valuenow="{{ route.risk_score }}" aria-valuemin="0" aria-valuemax="10">
+                            {{ route.risk_score }}/10
+                        </div>
+                    </div>
+                    <small class="form-hint">Overall risk score (0-10)</small>
+                </div>
+                
+                <div class="mt-4">
+                    <label class="form-label">Risk Distribution</label>
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-danger me-2">High</span>
+                                <div class="progress flex-grow-1">
+                                    {% set high_count = 0 %}
+                                    {% for risk_type in risk_data.keys() %}
+                                        {% if risk_type.endswith('risks') or risk_type.endswith('hazards') or risk_type.endswith('spots') or risk_type.endswith('coverage') %}
+                                            {% for risk in risk_data[risk_type] %}
+                                                {% if risk.risk_level == 'High' %}
+                                                    {% set high_count = high_count + 1 %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="progress-bar bg-danger" style="width: {{ high_count * 5 }}%" role="progressbar" aria-valuenow="{{ high_count }}" aria-valuemin="0" aria-valuemax="20">
+                                        {{ high_count }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row align-items-center mt-1">
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-warning me-2">Medium</span>
+                                <div class="progress flex-grow-1">
+                                    {% set medium_count = 0 %}
+                                    {% for risk_type in risk_data.keys() %}
+                                        {% if risk_type.endswith('risks') or risk_type.endswith('hazards') or risk_type.endswith('spots') or risk_type.endswith('coverage') %}
+                                            {% for risk in risk_data[risk_type] %}
+                                                {% if risk.risk_level == 'Medium' %}
+                                                    {% set medium_count = medium_count + 1 %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="progress-bar bg-warning" style="width: {{ medium_count * 5 }}%" role="progressbar" aria-valuenow="{{ medium_count }}" aria-valuemin="0" aria-valuemax="20">
+                                        {{ medium_count }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row align-items-center mt-1">
+                        <div class="col">
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-success me-2">Low</span>
+                                <div class="progress flex-grow-1">
+                                    {% set low_count = 0 %}
+                                    {% for risk_type in risk_data.keys() %}
+                                        {% if risk_type.endswith('risks') or risk_type.endswith('hazards') or risk_type.endswith('spots') or risk_type.endswith('coverage') %}
+                                            {% for risk in risk_data[risk_type] %}
+                                                {% if risk.risk_level == 'Low' %}
+                                                    {% set low_count = low_count + 1 %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    
+                                    <div class="progress-bar bg-success" style="width: {{ low_count * 5 }}%" role="progressbar" aria-valuenow="{{ low_count }}" aria-valuemin="0" aria-valuemax="20">
+                                        {{ low_count }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h3 class="card-title">Nearby Facilities</h3>
+            </div>
+            <div class="card-body">
+                {% if risk_data.nearby_facilities %}
+                    <div class="list-group list-group-flush">
+                        {% for facility_type, facilities in risk_data.nearby_facilities.items() %}
+                            {% if facilities %}
+                                <div class="list-group-item">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            {% set icon = 'building-hospital' %}
+                                            {% if facility_type == 'police_stations' %}
+                                                {% set icon = 'building-community' %}
+                                            {% elif facility_type == 'fuel_stations' %}
+                                                {% set icon = 'gas-station' %}
+                                            {% elif facility_type == 'rest_areas' %}
+                                                {% set icon = 'coffee' %}
+                                            {% elif facility_type == 'repair_shops' %}
+                                                {% set icon = 'tools' %}
+                                            {% endif %}
+                                            
+                                            <span class="bg-blue text-white avatar">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-{{ icon }}" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                    {% if facility_type == 'hospitals' %}
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                        <path d="M3 7l8.5 -4l8.5 4l0 10l-8.5 4l-8.5 -4l0 -10"></path>
+                                                        <path d="M7 10.5l1 .5"></path>
+                                                        <path d="M16 10.5l-1 .5"></path>
+                                                        <path d="M11.5 14h1"></path>
+                                                        <path d="M12 12v2"></path>
+                                                    {% elif facility_type == 'police_stations' %}
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                        <path d="M3 21l18 0"></path>
+                                                        <path d="M9 21v-4a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v4"></path>
+                                                        <path d="M10 9l4 0"></path>
+                                                        <path d="M12 4l0 5"></path>
+                                                        <path d="M4 11l16 0"></path>
+                                                        <path d="M4 11l0 10"></path>
+                                                        <path d="M20 11l0 10"></path>
+                                                        <path d="M8 11l0 5"></path>
+                                                        <path d="M16 11l0 5"></path>
+                                                    {% elif facility_type == 'fuel_stations' %}
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                        <path d="M14 11h1a2 2 0 0 1 2 2v3a1.5 1.5 0 0 0 3 0v-7l-3 -3"></path>
+                                                        <path d="M4 20v-14a2 2 0 0 1 2 -2h6a2 2 0 0 1 2 2v14"></path>
+                                                        <path d="M3 20l12 0"></path>
+                                                        <path d="M18 7v1a1 1 0 0 0 1 1h1"></path>
+                                                        <path d="M4 11l10 0"></path>
+                                                    {% elif facility_type == 'rest_areas' %}
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                        <path d="M3 14c.83 .642 2.077 1.017 3.5 1c1.423 .017 2.67 -.358 3.5 -1c.83 -.642 2.077 -1.017 3.5 -1c1.423 -.017 2.67 .358 3.5 1"></path>
+                                                        <path d="M8 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2"></path>
+                                                        <path d="M12 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2"></path>
+                                                        <path d="M16 3a2.4 2.4 0 0 0 -1 2a2.4 2.4 0 0 0 1 2"></path>
+                                                        <path d="M3 10h14v5a6 6 0 0 1 -6 6h-2a6 6 0 0 1 -6 -6v-5z"></path>
+                                                    {% elif facility_type == 'repair_shops' %}
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                                        <path d="M3 21h18"></path>
+                                                        <path d="M4 3h2a1 1 0 0 1 1 1a5 5 0 0 1 5 5v2"></path>
+                                                        <path d="M17 21l-4 -4l-3 3l-3 -6l-2 4l-3 -3l4 -4"></path>
+                                                    {% endif %}
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">{{ facility_type|replace('_', ' ')|title }}</div>
+                                            <div class="text-muted">
+                                                {{ facilities|length }} nearby
+                                                (<span class="text-success">{{ facilities|selectattr('distance', 'lessthan', 1000)|list|length }} within 1km</span>)
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty">
+                        <div class="empty-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M8 9l4 -4l4 4" />
+                                <path d="M16 15l-4 4l-4 -4" />
+                                <path d="M4 6l16 0" />
+                                <path d="M4 18l16 0" />
+                            </svg>
+                        </div>
+                        <p class="empty-title">No nearby facilities found</p>
+                        <p class="empty-subtitle text-muted">
+                            No facilities data is available for this route.
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Route Map</h3>
+            </div>
+            <div class="card-body">
+                <div id="route-map" style="height: 500px;"></div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Accident Risks</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if risk_data.accident_risks %}
+                            <div class="list-group list-group-flush">
+                                {% for risk in risk_data.accident_risks %}
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col-auto">
+                                                {% if risk.risk_level == 'High' %}
+                                                    <span class="badge bg-red"></span>
+                                                {% elif risk.risk_level == 'Medium' %}
+                                                    <span class="badge bg-yellow"></span>
+                                                {% else %}
+                                                    <span class="badge bg-green"></span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-auto">
+                                                <span class="avatar bg-red-lt">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                        <path d="M4.05 11a8 8 0 1 1 .5 4m-.5 5v-5h5" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="col text-truncate">
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="text-body d-block">Accident Risk</div>
+                                                    <div class="text-muted">{{ (risk.probability * 100)|int }}%</div>
+                                                </div>
+                                                <div class="text-muted text-truncate mt-n1">
+                                                    {% for factor in risk.factors %}
+                                                        {{ factor.factor }}: {{ factor.description }}<br>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty">
+                                <div class="empty-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M8 9l4 -4l4 4" />
+                                        <path d="M16 15l-4 4l-4 -4" />
+                                        <path d="M4 6l16 0" />
+                                        <path d="M4 18l16 0" />
+                                    </svg>
+                                </div>
+                                <p class="empty-title">No accident risks found</p>
+                                <p class="empty-subtitle text-muted">
+                                    No significant accident risks detected on this route.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Weather Hazards</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if risk_data.weather_hazards %}
+                            <div class="list-group list-group-flush">
+                                {% for hazard in risk_data.weather_hazards %}
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col-auto">
+                                                {% if hazard.risk_level == 'High' %}
+                                                    <span class="badge bg-red"></span>
+                                                {% elif hazard.risk_level == 'Medium' %}
+                                                    <span class="badge bg-yellow"></span>
+                                                {% else %}
+                                                    <span class="badge bg-green"></span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-auto">
+                                                <span class="avatar bg-blue-lt">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                        <path d="M7 18a4.6 4.4 0 0 1 0 -9a5 4.5 0 0 1 11 2h1a3.5 3.5 0 0 1 0 7h-12" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="col text-truncate">
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="text-body d-block">{{ hazard.weather_condition }}</div>
+                                                    <div class="text-muted">{{ (hazard.probability * 100)|int if hazard.probability else "" }}%</div>
+                                                </div>
+                                                <div class="text-muted text-truncate mt-n1">
+                                                    Temp: {{ hazard.temperature }}°C, 
+                                                    Visibility: {{ hazard.visibility }}km, 
+                                                    Precip: {{ hazard.precipitation }}mm
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty">
+                                <div class="empty-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M8 9l4 -4l4 4" />
+                                        <path d="M16 15l-4 4l-4 -4" />
+                                        <path d="M4 6l16 0" />
+                                        <path d="M4 18l16 0" />
+                                    </svg>
+                                </div>
+                                <p class="empty-title">No weather hazards found</p>
+                                <p class="empty-subtitle text-muted">
+                                    No significant weather hazards detected on this route.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Elevation Risks</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if risk_data.elevation_risks %}
+                            <div class="list-group list-group-flush">
+                                {% for risk in risk_data.elevation_risks %}
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col-auto">
+                                                {% if risk.risk_level == 'High' %}
+                                                    <span class="badge bg-red"></span>
+                                                {% elif risk.risk_level == 'Medium' %}
+                                                    <span class="badge bg-yellow"></span>
+                                                {% else %}
+                                                    <span class="badge bg-green"></span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-auto">
+                                                <span class="avatar bg-green-lt">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                        <path d="M8 19h8a4 4 0 0 0 4 -4v-8a4 4 0 0 0 -4 -4h-8a4 4 0 0 0 -4 4v8a4 4 0 0 0 4 4z" />
+                                                        <path d="M8 12l4 -4l4 4" />
+                                                        <path d="M8 16l4 -4l4 4" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="col text-truncate">
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="text-body d-block">{{ risk.risk_type }}</div>
+                                                    <div class="text-muted">{{ risk.gradient }}% slope</div>
+                                                </div>
+                                                <div class="text-muted text-truncate mt-n1">
+                                                    Elevation: {{ risk.elevation }}m, 
+                                                    Distance: {{ risk.distance }}m
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty">
+                                <div class="empty-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M8 9l4 -4l4 4" />
+                                        <path d="M16 15l-4 4l-4 -4" />
+                                        <path d="M4 6l16 0" />
+                                        <path d="M4 18l16 0" />
+                                    </svg>
+                                </div>
+                                <p class="empty-title">No elevation risks found</p>
+                                <p class="empty-subtitle text-muted">
+                                    No significant elevation risks detected on this route.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Network Coverage</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if risk_data.network_coverage %}
+                            <div class="list-group list-group-flush">
+                                {% for coverage in risk_data.network_coverage %}
+                                    <div class="list-group-item">
+                                        <div class="row align-items-center">
+                                            <div class="col-auto">
+                                                {% if coverage.risk_level == 'High' %}
+                                                    <span class="badge bg-red"></span>
+                                                {% elif coverage.risk_level == 'Medium' %}
+                                                    <span class="badge bg-yellow"></span>
+                                                {% else %}
+                                                    <span class="badge bg-green"></span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-auto">
+                                                <span class="avatar bg-purple-lt">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                        <path d="M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+                                                        <path d="M16 12v1.5a2.5 2.5 0 0 0 5 0v-1.5a9 9 0 1 0 -5.5 8.28" />
+                                                    </svg>
+                                                </span>
+                                            </div>
+                                            <div class="col text-truncate">
+                                                <div class="d-flex justify-content-between">
+                                                    <div class="text-body d-block">{{ coverage.network_type }}</div>
+                                                    <div class="text-muted">{{ coverage.signal_strength }}%</div>
+                                                </div>
+                                                <div class="text-muted text-truncate mt-n1">
+                                                    Provider: {{ coverage.provider }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty">
+                                <div class="empty-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M8 9l4 -4l4 4" />
+                                        <path d="M16 15l-4 4l-4 -4" />
+                                        <path d="M4 6l16 0" />
+                                        <path d="M4 18l16 0" />
+                                    </svg>
+                                </div>
+                                <p class="empty-title">No network coverage issues found</p>
+                                <p class="empty-subtitle text-muted">
+                                    No significant network coverage issues detected on this route.
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
+<script>
+    // Initialize map
+    const map = L.map('route-map').setView([
+        {{ route.origin.lat if route.origin.lat else 20.5937 }}, 
+        {{ route.origin.lng if route.origin.lng else 78.9629 }}
+    ], 12);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    // Add markers for origin and destination
+    const originMarker = L.marker([
+        {{ route.origin.lat if route.origin.lat else 0 }}, 
+        {{ route.origin.lng if route.origin.lng else 0 }}
+    ]).addTo(map).bindPopup('Origin: {{ route.origin.address }}');
+    
+    const destinationMarker = L.marker([
+        {{ route.destination.lat if route.destination.lat else 0 }}, 
+        {{ route.destination.lng if route.destination.lng else 0 }}
+    ]).addTo(map).bindPopup('Destination: {{ route.destination.address }}');
+    
+    // Add route polyline if available
+    {% if route.polyline %}
+        function decodePolyline(encoded) {
+            let index = 0, len = encoded.length;
+            let lat = 0, lng = 0;
+            let path = [];
+            
+            while (index < len) {
+                let b, shift = 0, result = 0;
+                
+                do {
+                    b = encoded.charAt(index++).charCodeAt(0) - 63;
+                    result |= (b & 0x1f) << shift;
+                    shift += 5;
+                } while (b >= 0x20);
+                
+                let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+                lat += dlat;
+                
+                shift = 0;
+                result = 0;
+                
+                do {
+                    b = encoded.charAt(index++).charCodeAt(0) - 63;
+                    result |= (b & 0x1f) << shift;
+                    shift += 5;
+                } while (b >= 0x20);
+                
+                let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+                lng += dlng;
+                
+                path.push([lat * 1e-5, lng * 1e-5]);
+            }
+            
+            return path;
+        }
+        
+        const routePoints = decodePolyline("{{ route.polyline }}");
+        const routeLine = L.polyline(routePoints, {color: '#206bc4', weight: 5, opacity: 0.7}).addTo(map);
+        
+        map.fitBounds(routeLine.getBounds(), {padding: [50, 50]});
+    {% else %}
+        // If no polyline, fit bounds to markers
+        const bounds = L.latLngBounds([originMarker.getLatLng(), destinationMarker.getLatLng()]);
+        map.fitBounds(bounds, {padding: [50, 50]});
+    {% endif %}
+    
+    // Add risk markers
+    const riskMarkers = L.layerGroup().addTo(map);
+    
+    // Function to add risk markers
+    function addRiskMarkers(risks, iconUrl, popupPrefix) {
+        for (const risk of risks) {
+            if (risk.location) {
+                const marker = L.marker([risk.location.lat, risk.location.lng], {
+                    icon: L.icon({
+                        iconUrl: iconUrl,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12],
+                        popupAnchor: [0, -12]
+                    })
+                }).addTo(riskMarkers);
+                
+                let popupContent = `<strong>${popupPrefix}</strong><br>`;
+                popupContent += `Risk Level: ${risk.risk_level}<br>`;
+                
+                if (risk.weather_condition) {
+                    popupContent += `Weather: ${risk.weather_condition}<br>`;
+                }
+                
+                if (risk.gradient) {
+                    popupContent += `Gradient: ${risk.gradient}%<br>`;
+                }
+                
+                if (risk.factors) {
+                    for (const factor of risk.factors) {
+                        popupContent += `${factor.factor}: ${factor.description}<br>`;
+                    }
+                }
+                
+                marker.bindPopup(popupContent);
+            }
+        }
+    }
+    
+    // Add different risk markers
+    {% if risk_data.accident_risks %}
+        addRiskMarkers({{ risk_data.accident_risks|tojson }}, '/static/img/accident-marker.png', 'Accident Risk');
+    {% endif %}
+    
+    {% if risk_data.weather_hazards %}
+        addRiskMarkers({{ risk_data.weather_hazards|tojson }}, '/static/img/weather-marker.png', 'Weather Hazard');
+    {% endif %}
+    
+    {% if risk_data.elevation_risks %}
+        addRiskMarkers({{ risk_data.elevation_risks|tojson }}, '/static/img/elevation-marker.png', 'Elevation Risk');
+    {% endif %}
+    
+    {% if risk_data.network_coverage %}
+        addRiskMarkers({{ risk_data.network_coverage|tojson }}, '/static/img/network-marker.png', 'Network Coverage');
+    {% endif %}
+    
+    // Add nearby facilities markers
+    {% if risk_data.nearby_facilities %}
+        {% for facility_type, facilities in risk_data.nearby_facilities.items() %}
+            {% if facilities %}
+                {% set icon_url = '/static/img/hospital-marker.png' %}
+                {% if facility_type == 'police_stations' %}
+                    {% set icon_url = '/static/img/police-marker.png' %}
+                {% elif facility_type == 'fuel_stations' %}
+                    {% set icon_url = '/static/img/fuel-marker.png' %}
+                {% elif facility_type == 'rest_areas' %}
+                    {% set icon_url = '/static/img/rest-marker.png' %}
+                {% elif facility_type == 'repair_shops' %}
+                    {% set icon_url = '/static/img/repair-marker.png' %}
+                {% endif %}
+                
+                {% for facility in facilities %}
+                    L.marker([facility.location.lat, facility.location.lng], {
+                        icon: L.icon({
+                            iconUrl: '{{ icon_url }}',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12],
+                            popupAnchor: [0, -12]
+                        })
+                    }).addTo(map).bindPopup(`
+                        <strong>{{ facility_type|replace('_', ' ')|title }}</strong><br>
+                        {{ facility.name }}<br>
+                        {{ facility.vicinity }}<br>
+                        Distance: {{ (facility.distance / 1000)|round(1) }} km
+                    `);
+                {% endfor %}
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.card {
+    box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.05);
+}
+</style>
+{% endblock %}

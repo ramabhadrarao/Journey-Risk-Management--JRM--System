@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Add Maintenance - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Add Maintenance Record
+                        </h2>
+                        <div class="text-muted mt-1">Add maintenance history for {{ vehicle.name }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Maintenance Details</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('vehicles.add_maintenance', vehicle_id=vehicle._id) }}" method="post">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label required">Maintenance Type</label>
+                                <select name="type" class="form-select" required>
+                                    <option value="regular_service">Regular Service</option>
+                                    <option value="oil_change">Oil Change</option>
+                                    <option value="tire_replacement">Tire Replacement</option>
+                                    <option value="brake_service">Brake Service</option>
+                                    <option value="battery_replacement">Battery Replacement</option>
+                                    <option value="engine_repair">Engine Repair</option>
+                                    <option value="transmission_service">Transmission Service</option>
+                                    <option value="electrical_repair">Electrical Repair</option>
+                                    <option value="body_repair">Body Repair</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Date</label>
+                                <input type="date" class="form-control" name="date" value="{{ today }}" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Mileage (km)</label>
+                                <input type="number" class="form-control" name="mileage" min="0" step="1" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Cost</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" class="form-control" name="cost" min="0" step="0.01">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Service Center</label>
+                                <input type="text" class="form-control" name="service_center">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label required">Description</label>
+                                <textarea class="form-control" name="description" rows="4" required></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input class="form-check-input" type="checkbox" name="update_next_service">
+                            <span class="form-check-label">Schedule next service</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group mb-3" id="nextServiceDateGroup" style="display: none;">
+                        <label class="form-label">Next Service Date</label>
+                        <input type="date" class="form-control" name="next_service_date">
+                    </div>
+                    
+                    <div class="form-footer">
+                        <button type="submit" class="btn btn-primary">Add Maintenance Record</button>
+                        <a href="{{ url_for('vehicles.view_vehicle', vehicle_id=vehicle._id) }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const updateNextServiceCheckbox = document.querySelector('input[name="update_next_service"]');
+        const nextServiceDateGroup = document.getElementById('nextServiceDateGroup');
+        
+        // Show/hide next service date field based on checkbox
+        updateNextServiceCheckbox.addEventListener('change', function() {
+            nextServiceDateGroup.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Set default next service date (3 months from today)
+        const nextServiceDateInput = document.querySelector('input[name="next_service_date"]');
+        const today = new Date();
+        const nextServiceDate = new Date(today);
+        nextServiceDate.setMonth(today.getMonth() + 3);
+        
+        const dateString = nextServiceDate.toISOString().substring(0, 10);
+        nextServiceDateInput.value = dateString;
+    });
+</script>
+{% endblock %}

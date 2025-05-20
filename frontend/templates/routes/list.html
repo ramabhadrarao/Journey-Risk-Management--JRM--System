@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Routes - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Routes
+                        </h2>
+                        <div class="text-muted mt-1">Manage and analyze your routes</div>
+                    </div>
+                    <div class="col-auto ms-auto">
+                        <div class="btn-list">
+                            <a href="{{ url_for('routes.create_route') }}" class="btn btn-primary d-none d-sm-inline-block">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M12 5l0 14" />
+                                    <path d="M5 12l14 0" />
+                                </svg>
+                                Create New Route
+                            </a>
+                            <a href="{{ url_for('dashboard.route_comparison') }}" class="btn btn-secondary d-none d-sm-inline-block">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M4 4h6v8h-6z" />
+                                    <path d="M4 16h6v4h-6z" />
+                                    <path d="M14 12h6v8h-6z" />
+                                    <path d="M14 4h6v4h-6z" />
+                                </svg>
+                                Compare Routes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Route List</h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Route Name</th>
+                                <th>Origin</th>
+                                <th>Destination</th>
+                                <th>Distance</th>
+                                <th>Duration</th>
+                                <th>Created</th>
+                                <th>Risk Level</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in routes %}
+                            <tr>
+                                <td>{{ route.name or 'Route ' + route.route_id[:8] }}</td>
+                                <td>{{ route.origin.address }}</td>
+                                <td>{{ route.destination.address }}</td>
+                                <td>{{ route.distance }}</td>
+                                <td>{{ route.duration }}</td>
+                                <td>{{ route.created_at|string|truncate(16, True, '') }}</td>
+                                <td>
+                                    {% set badge_class = 'bg-success' %}
+                                    {% if route.risk_level == 'high' %}
+                                        {% set badge_class = 'bg-danger' %}
+                                    {% elif route.risk_level == 'medium' %}
+                                        {% set badge_class = 'bg-warning' %}
+                                    {% endif %}
+                                    <span class="badge {{ badge_class }}">{{ route.risk_level|title }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if route.status == 'completed' else 'secondary' }}">
+                                        {{ route.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-list flex-nowrap">
+                                        <a href="{{ url_for('routes.view_route', route_id=route.route_id) }}" class="btn btn-sm btn-primary">
+                                            View
+                                        </a>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <span class="d-none d-sm-inline">Actions</span>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <form action="{{ url_for('routes.regenerate_route', route_id=route.route_id) }}" method="post">
+                                                    <button type="submit" class="dropdown-item">Regenerate</button>
+                                                </form>
+                                                <form action="{{ url_for('routes.delete_route', route_id=route.route_id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this route?');">
+                                                    <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if total_pages > 1 %}
+                <div class="d-flex mt-4">
+                    <ul class="pagination ms-auto">
+                        <li class="page-item {{ 'disabled' if page == 1 else '' }}">
+                            <a class="page-link" href="{{ url_for('routes.list_routes', page=page-1) }}" tabindex="-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M15 6l-6 6l6 6" />
+                                </svg>
+                                prev
+                            </a>
+                        </li>
+                        
+                        {% for p in range(1, total_pages + 1) %}
+                            {% if p == page %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ p }}</a></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('routes.list_routes', page=p) }}">{{ p }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        <li class="page-item {{ 'disabled' if page == total_pages else '' }}">
+                            <a class="page-link" href="{{ url_for('routes.list_routes', page=page+1) }}">
+                                next
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M9 6l6 6l-6 6" />
+                                </svg>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

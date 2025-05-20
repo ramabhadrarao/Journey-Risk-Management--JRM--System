@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Route Comparison - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Route Comparison
+                        </h2>
+                        <div class="text-muted mt-1">Compare Risk Profiles of Multiple Routes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Comparison Results</h3>
+            </div>
+            <div class="card-body">
+                {% if comparison_data and comparison_data.comparison %}
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead>
+                                <tr>
+                                    <th>Route Name</th>
+                                    <th>Origin</th>
+                                    <th>Destination</th>
+                                    <th>Distance (km)</th>
+                                    <th>Duration</th>
+                                    <th>Optimized Duration</th>
+                                    <th>Risk Score</th>
+                                    <th>Risk Level</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route in comparison_data.comparison %}
+                                <tr>
+                                    <td>{{ route.name }}</td>
+                                    <td>{{ route.origin }}</td>
+                                    <td>{{ route.destination }}</td>
+                                    <td>{{ route.distance }}</td>
+                                    <td>{{ route.duration }} min</td>
+                                    <td>{{ route.optimized_duration }}</td>
+                                    <td>{{ route.risk_score }}</td>
+                                    <td>
+                                        {% set badge_class = 'bg-success' %}
+                                        {% if route.risk_level == 'high' %}
+                                            {% set badge_class = 'bg-danger' %}
+                                        {% elif route.risk_level == 'medium' %}
+                                            {% set badge_class = 'bg-warning' %}
+                                        {% endif %}
+                                        <span class="badge {{ badge_class }}">{{ route.risk_level|title }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('routes.view_route', route_id=route.route_id) }}" class="btn btn-sm btn-primary">View</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Risk Score Comparison</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container" style="position: relative; height:300px;">
+                                        <canvas id="riskScoreChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Risk Factors Comparison</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container" style="position: relative; height:300px;">
+                                        <canvas id="riskFactorsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Duration Comparison</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container" style="position: relative; height:300px;">
+                                        <canvas id="durationChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Nearby Facilities Comparison</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container" style="position: relative; height:300px;">
+                                        <canvas id="facilitiesChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        No comparison data available. Please select routes to compare.
+                    </div>
+                    <a href="{{ url_for('routes.list_routes') }}" class="btn btn-primary">
+                        Select Routes to Compare
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if comparison_data and comparison_data.comparison %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    // Risk Score Chart
+    const riskScoreData = {
+        labels: [
+            {% for route in comparison_data.comparison %}
+            '{{ route.name }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Risk Score',
+            data: [
+                {% for route in comparison_data.comparison %}
+                {{ route.risk_score }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                {% for route in comparison_data.comparison %}
+                {% if route.risk_level == 'high' %}
+                '#FF5252',
+                {% elif route.risk_level == 'medium' %}
+                '#FFC107',
+                {% else %}
+                '#4CAF50',
+                {% endif %}
+                {% endfor %}
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    const riskScoreCtx = document.getElementById('riskScoreChart').getContext('2d');
+    const riskScoreChart = new Chart(riskScoreCtx, {
+        type: 'bar',
+        data: riskScoreData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10
+                }
+            }
+        }
+    });
+
+    // Risk Factors Chart
+    const riskFactorsData = {
+        labels: [
+            {% for count_type in comparison_data.comparison[0].risk_counts.keys() %}
+            '{{ count_type|replace("_", " ")|title }}',
+            {% endfor %}
+        ],
+        datasets: [
+            {% for route in comparison_data.comparison %}
+            {
+                label: '{{ route.name }}',
+                data: [
+                    {% for count_type, count in route.risk_counts.items() %}
+                    {{ count }},
+                    {% endfor %}
+                ],
+                borderWidth: 1
+            },
+            {% endfor %}
+        ]
+    };
+
+    const riskFactorsCtx = document.getElementById('riskFactorsChart').getContext('2d');
+    const riskFactorsChart = new Chart(riskFactorsCtx, {
+        type: 'radar',
+        data: riskFactorsData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Duration Chart
+    const durationData = {
+        labels: [
+            {% for route in comparison_data.comparison %}
+            '{{ route.name }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Original Duration',
+            data: [
+                {% for route in comparison_data.comparison %}
+                {{ route.duration|replace(" min", "")|int }},
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        },
+        {
+            label: 'Optimized Duration',
+            data: [
+                {% for route in comparison_data.comparison %}
+                {% set optimized_duration = route.optimized_duration|replace(" hours ", ":")|replace(" mins", "")|split(":") %}
+                {% if optimized_duration|length > 1 %}
+                {{ optimized_duration[0]|int * 60 + optimized_duration[1]|int }},
+                {% else %}
+                {{ optimized_duration[0]|replace(" mins", "")|int }},
+                {% endif %}
+                {% endfor %}
+            ],
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1
+        }]
+    };
+
+    const durationCtx = document.getElementById('durationChart').getContext('2d');
+    const durationChart = new Chart(durationCtx, {
+        type: 'bar',
+        data: durationData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Minutes'
+                    }
+                }
+            }
+        }
+    });
+
+    // Facilities Chart
+    const facilitiesData = {
+        labels: [
+            {% for facility_type in comparison_data.comparison[0].facility_counts.keys() %}
+            '{{ facility_type|replace("_", " ")|title }}',
+            {% endfor %}
+        ],
+        datasets: [
+            {% for route in comparison_data.comparison %}
+            {
+                label: '{{ route.name }}',
+                data: [
+                    {% for facility_type, count in route.facility_counts.items() %}
+                    {{ count }},
+                    {% endfor %}
+                ],
+                borderWidth: 1
+            },
+            {% endfor %}
+        ]
+    };
+
+    const facilitiesCtx = document.getElementById('facilitiesChart').getContext('2d');
+    const facilitiesChart = new Chart(facilitiesCtx, {
+        type: 'polarArea',
+        data: facilitiesData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.chart-container {
+    position: relative;
+    margin: auto;
+    width: 100%;
+}
+</style>
+{% endblock %}

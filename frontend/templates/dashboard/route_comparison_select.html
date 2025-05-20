@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Select Routes - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Select Routes to Compare
+                        </h2>
+                        <div class="text-muted mt-1">Choose two or more routes to compare risk profiles</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Available Routes</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('dashboard.route_comparison') }}" method="post">
+                    <div class="table-responsive">
+                        <table class="table table-vcenter card-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 1%">
+                                        <input class="form-check-input m-0 align-middle" type="checkbox" id="select-all">
+                                    </th>
+                                    <th>Route Name</th>
+                                    <th>Origin</th>
+                                    <th>Destination</th>
+                                    <th>Distance</th>
+                                    <th>Duration</th>
+                                    <th>Risk Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for route in routes %}
+                                <tr>
+                                    <td>
+                                        <input class="form-check-input m-0 align-middle route-checkbox" type="checkbox" name="route_ids" value="{{ route.route_id }}">
+                                    </td>
+                                    <td>{{ route.name or 'Route ' + route.route_id[:8] }}</td>
+                                    <td>{{ route.origin.address }}</td>
+                                    <td>{{ route.destination.address }}</td>
+                                    <td>{{ route.distance }}</td>
+                                    <td>{{ route.duration }}</td>
+                                    <td>
+                                        {% set badge_class = 'bg-success' %}
+                                        {% if route.risk_level == 'high' %}
+                                            {% set badge_class = 'bg-danger' %}
+                                        {% elif route.risk_level == 'medium' %}
+                                            {% set badge_class = 'bg-warning' %}
+                                        {% endif %}
+                                        <span class="badge {{ badge_class }}">{{ route.risk_level|title }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if route.status == 'completed' else 'secondary' }}">
+                                            {{ route.status|title }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <div>
+                            <span id="selected-count" class="text-muted">0 routes selected</span>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-primary" id="compare-btn" disabled>
+                                Compare Selected Routes
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('select-all');
+        const routeCheckboxes = document.querySelectorAll('.route-checkbox');
+        const selectedCountElement = document.getElementById('selected-count');
+        const compareBtn = document.getElementById('compare-btn');
+        
+        // Update selected count and button state
+        function updateSelectedCount() {
+            const count = Array.from(routeCheckboxes).filter(checkbox => checkbox.checked).length;
+            selectedCountElement.textContent = `${count} route${count !== 1 ? 's' : ''} selected`;
+            
+            // Enable compare button only if 2 or more routes are selected
+            compareBtn.disabled = count < 2;
+        }
+        
+        // Select/deselect all checkboxes
+        selectAllCheckbox.addEventListener('change', function() {
+            routeCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            
+            updateSelectedCount();
+        });
+        
+        // Update count when individual checkboxes change
+        routeCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateSelectedCount();
+                
+                // Update "select all" checkbox state
+                const allChecked = Array.from(routeCheckboxes).every(checkbox => checkbox.checked);
+                const noneChecked = Array.from(routeCheckboxes).every(checkbox => !checkbox.checked);
+                
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = !allChecked && !noneChecked;
+            });
+        });
+        
+        // Initialize count
+        updateSelectedCount();
+    });
+</script>
+{% endblock %}

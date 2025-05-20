@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Dashboard
+                        </h2>
+                        <div class="text-muted mt-1">Journey Risk Management Overview</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body p-4 text-center">
+                <div class="text-end">
+                    <span class="badge bg-primary">Total</span>
+                </div>
+                <div class="h1 m-0">{{ dashboard_data.summary.total_routes }}</div>
+                <div class="text-muted mb-3">Routes</div>
+                <div class="progress progress-sm">
+                    <div class="progress-bar bg-primary" style="width: 100%" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="100% Complete">
+                        <span class="visually-hidden">100% Complete</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body p-4 text-center">
+                <div class="text-end">
+                    <span class="badge bg-primary">Total</span>
+                </div>
+                <div class="h1 m-0">{{ dashboard_data.summary.total_distance }} km</div>
+                <div class="text-muted mb-3">Distance</div>
+                <div class="progress progress-sm">
+                    <div class="progress-bar bg-primary" style="width: 100%" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="100% Complete">
+                        <span class="visually-hidden">100% Complete</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body p-4 text-center">
+                <div class="text-end">
+                    <span class="badge bg-primary">Total</span>
+                </div>
+                <div class="h1 m-0">{{ dashboard_data.summary.total_duration }} hrs</div>
+                <div class="text-muted mb-3">Duration</div>
+                <div class="progress progress-sm">
+                    <div class="progress-bar bg-primary" style="width: 100%" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="100% Complete">
+                        <span class="visually-hidden">100% Complete</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body p-4 text-center">
+                <div class="text-end">
+                    <span class="badge bg-primary">Total</span>
+                </div>
+                <div class="h1 m-0">{{ dashboard_data.summary.total_vehicles }}</div>
+                <div class="text-muted mb-3">Vehicles</div>
+                <div class="progress progress-sm">
+                    <div class="progress-bar bg-primary" style="width: 100%" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="100% Complete">
+                        <span class="visually-hidden">100% Complete</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Risk Distribution</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:280px;">
+                    <canvas id="riskDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Risk Points by Type</h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="position: relative; height:280px;">
+                    <canvas id="riskPointsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Recent Routes</h3>
+                <div class="card-actions">
+                    <a href="{{ url_for('routes.list_routes') }}" class="btn btn-primary">
+                        View All Routes
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Route Name</th>
+                                <th>Origin</th>
+                                <th>Destination</th>
+                                <th>Distance</th>
+                                <th>Duration</th>
+                                <th>Risk Level</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in dashboard_data.recent_routes %}
+                            <tr>
+                                <td>{{ route.name or 'Route ' + route.route_id[:8] }}</td>
+                                <td>{{ route.origin.address }}</td>
+                                <td>{{ route.destination.address }}</td>
+                                <td>{{ route.distance }}</td>
+                                <td>{{ route.duration }}</td>
+                                <td>
+                                    {% set badge_class = 'bg-success' %}
+                                    {% if route.risk_level == 'high' %}
+                                        {% set badge_class = 'bg-danger' %}
+                                    {% elif route.risk_level == 'medium' %}
+                                        {% set badge_class = 'bg-warning' %}
+                                    {% endif %}
+                                    <span class="badge {{ badge_class }}">{{ route.risk_level|title }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('routes.view_route', route_id=route.route_id) }}" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Vehicle Locations</h3>
+                <div class="card-actions">
+                    <a href="{{ url_for('vehicles.list_vehicles') }}" class="btn btn-primary">
+                        View All Vehicles
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="vehicleMap" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if real_time_data and real_time_data.weather_alerts %}
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Weather Alerts</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <div class="d-flex">
+                        <div>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M12 9v2m0 4v.01"></path>
+                                <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <h4 class="alert-title">Weather Alerts Detected</h4>
+                            <div class="text-muted">The following routes have potential weather hazards:</div>
+                            <ul>
+                                {% for alert in real_time_data.weather_alerts %}
+                                <li>
+                                    <strong>{{ alert.route_name }}</strong>: {{ alert.description }}
+                                    <a href="{{ url_for('routes.view_route', route_id=alert.route_id) }}" class="btn btn-sm btn-warning ms-2">
+                                        View Route
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css"/>
+
+<script>
+    // Risk Distribution Chart
+    const riskDistData = {
+        labels: ['High', 'Medium', 'Low', 'Unknown'],
+        datasets: [{
+            label: 'Risk Distribution',
+            data: [
+                {{ dashboard_data.summary.risk_distribution.high }},
+                {{ dashboard_data.summary.risk_distribution.medium }},
+                {{ dashboard_data.summary.risk_distribution.low }},
+                {{ dashboard_data.summary.risk_distribution.unknown }}
+            ],
+            backgroundColor: [
+                '#FF5252',
+                '#FFC107',
+                '#4CAF50',
+                '#9E9E9E'
+            ]
+        }]
+    };
+
+    const riskDistCtx = document.getElementById('riskDistributionChart').getContext('2d');
+    const riskDistChart = new Chart(riskDistCtx, {
+        type: 'pie',
+        data: riskDistData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+
+    // Risk Points Chart
+    const riskPointsData = {
+        labels: [
+            {% for type, count in dashboard_data.summary.risk_points_by_type.items() %}
+            '{{ type|replace("_", " ")|title }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            label: 'Risk Points',
+            data: [
+                {% for type, count in dashboard_data.summary.risk_points_by_type.items() %}
+                {{ count }},
+                {% endfor %}
+            ],
+            backgroundColor: '#206bc4'
+        }]
+    };
+
+    const riskPointsCtx = document.getElementById('riskPointsChart').getContext('2d');
+    const riskPointsChart = new Chart(riskPointsCtx, {
+        type: 'bar',
+        data: riskPointsData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Vehicle Map
+    const map = L.map('vehicleMap').setView([20.5937, 78.9629], 5);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Add vehicle markers
+    {% for vehicle in dashboard_data.vehicles %}
+        {% if dashboard_data.latest_telemetry[vehicle._id|string] and dashboard_data.latest_telemetry[vehicle._id|string].location %}
+            L.marker([
+                {{ dashboard_data.latest_telemetry[vehicle._id|string].location.lat }}, 
+                {{ dashboard_data.latest_telemetry[vehicle._id|string].location.lng }}
+            ]).addTo(map)
+            .bindPopup(`
+                <strong>{{ vehicle.name }}</strong><br>
+                Make: {{ vehicle.make }}<br>
+                Model: {{ vehicle.model }}<br>
+                Fuel Level: {{ dashboard_data.latest_telemetry[vehicle._id|string].fuel_level }}%<br>
+                Engine Temp: {{ dashboard_data.latest_telemetry[vehicle._id|string].engine_temp }}°C<br>
+                <a href="{{ url_for('vehicles.view_vehicle', vehicle_id=vehicle._id) }}" class="btn btn-sm btn-primary mt-2">View Details</a>
+            `);
+        {% endif %}
+    {% endfor %}
+
+    // Add active routes if available
+    {% if real_time_data and real_time_data.active_routes %}
+        {% for route in real_time_data.active_routes %}
+            {% if route.polyline %}
+                // Decode polyline
+                function decodePolyline(encoded) {
+                    let index = 0, len = encoded.length;
+                    let lat = 0, lng = 0;
+                    let path = [];
+                    
+                    while (index < len) {
+                        let b, shift = 0, result = 0;
+                        
+                        do {
+                            b = encoded.charAt(index++).charCodeAt(0) - 63;
+                            result |= (b & 0x1f) << shift;
+                            shift += 5;
+                        } while (b >= 0x20);
+                        
+                        let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+                        lat += dlat;
+                        
+                        shift = 0;
+                        result = 0;
+                        
+                        do {
+                            b = encoded.charAt(index++).charCodeAt(0) - 63;
+                            result |= (b & 0x1f) << shift;
+                            shift += 5;
+                        } while (b >= 0x20);
+                        
+                        let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+                        lng += dlng;
+                        
+                        path.push([lat * 1e-5, lng * 1e-5]);
+                    }
+                    
+                    return path;
+                }
+
+                const routePoints = decodePolyline("{{ route.polyline }}");
+                
+                {% set color = "#4CAF50" %}
+                {% if route.risk_level == "high" %}
+                    {% set color = "#FF5252" %}
+                {% elif route.risk_level == "medium" %}
+                    {% set color = "#FFC107" %}
+                {% endif %}
+                
+                L.polyline(routePoints, {color: "{{ color }}", weight: 4, opacity: 0.7}).addTo(map)
+                    .bindPopup(`
+                        <strong>{{ route.name or 'Route ' + route.route_id[:8] }}</strong><br>
+                        Status: {{ route.status|title }}<br>
+                        Risk Level: {{ route.risk_level|title }}<br>
+                        <a href="{{ url_for('routes.view_route', route_id=route.route_id) }}" class="btn btn-sm btn-primary mt-2">View Details</a>
+                    `);
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    // Set bounds based on markers
+    try {
+        const bounds = [];
+        
+        {% for vehicle in dashboard_data.vehicles %}
+            {% if dashboard_data.latest_telemetry[vehicle._id|string] and dashboard_data.latest_telemetry[vehicle._id|string].location %}
+                bounds.push([
+                    {{ dashboard_data.latest_telemetry[vehicle._id|string].location.lat }}, 
+                    {{ dashboard_data.latest_telemetry[vehicle._id|string].location.lng }}
+                ]);
+            {% endif %}
+        {% endfor %}
+        
+        if (bounds.length > 0) {
+            map.fitBounds(bounds);
+        }
+    } catch (e) {
+        console.error(e);
+    }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.chart-container {
+    position: relative;
+    margin: auto;
+    width: 100%;
+}
+</style>
+{% endblock %}

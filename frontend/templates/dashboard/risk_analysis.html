@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Risk Analysis - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="page-header d-print-none">
+            <div class="container-xl">
+                <div class="row g-2 align-items-center">
+                    <div class="col">
+                        <h2 class="page-title">
+                            Risk Analysis Dashboard
+                        </h2>
+                        <div class="text-muted mt-1">Advanced Risk Analytics and Visualization</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <iframe 
+                    src="{{ url_for('dash.risk_analysis') }}" 
+                    style="width: 100%; height: 800px; border: none;"
+                    id="risk-analysis-iframe"
+                ></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Adjust iframe height to avoid scrollbars
+    function adjustIframeHeight() {
+        const iframe = document.getElementById('risk-analysis-iframe');
+        iframe.onload = function() {
+            try {
+                const height = iframe.contentWindow.document.body.scrollHeight;
+                iframe.style.height = (height + 50) + 'px';
+            } catch (e) {
+                console.error("Could not adjust iframe height:", e);
+            }
+        };
+    }
+    
+    // Call the function on load and on resize
+    window.addEventListener('load', adjustIframeHeight);
+    window.addEventListener('resize', adjustIframeHeight);
+</script>
+{% endblock %}
