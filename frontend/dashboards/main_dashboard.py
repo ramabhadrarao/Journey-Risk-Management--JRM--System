@@ -11,7 +11,7 @@ import requests
 from datetime import datetime, timedelta
 import json
 
-from frontend.dashboards.utils import make_map, get_api_data
+from dashboards.utils import make_map, get_api_data
 
 # Main Dashboard Layout
 main_dashboard_layout = dbc.Container([

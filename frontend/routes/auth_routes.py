@@ -1,24 +1,49 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, current_app
 import requests
 import json
 from datetime import datetime
+import os
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
+
+def get_backend_url():
+    """Get the backend URL from app config or environment"""
+    return os.getenv('BACKEND_URL', 'http://localhost:5000')
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle user login"""
     if request.method == 'POST':
+        # Get email/username and password from form
+        email_or_username = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Prepare data for API request
+        # The backend expects either 'username' or 'email' field
         data = {
-            'username': request.form.get('username'),
-            'password': request.form.get('password')
+            'password': password
         }
         
+        # Check if input looks like an email (contains @)
+        if '@' in email_or_username:
+            data['email'] = email_or_username
+        else:
+            data['username'] = email_or_username
+        
+        backend_url = get_backend_url()
+        
         try:
+            # For debugging
+            print(f"Sending login request to {backend_url}/api/auth/login with data: {json.dumps(data)}")
+            
             response = requests.post(
-                f'{request.host_url}api/auth/login',
+                f'{backend_url}/api/auth/login',
                 json=data
             )
+            
+            # For debugging
+            print(f"Login response status code: {response.status_code}")
+            print(f"Login response content: {response.text}")
             
             if response.status_code == 200:
                 result = response.json()
@@ -29,10 +54,16 @@ def login():
                 flash('Login successful', 'success')
                 return redirect(url_for('dashboard.index'))
             else:
-                error_msg = response.json().get('error', 'Login failed')
+                error_msg = "Invalid credentials"
+                if response.headers.get('Content-Type') == 'application/json':
+                    try:
+                        error_msg = response.json().get('error', 'Login failed')
+                    except:
+                        pass
                 flash(error_msg, 'danger')
         except Exception as e:
-            flash(f'Error: {str(e)}', 'danger')
+            flash(f'Error connecting to the backend server: {str(e)}', 'danger')
+            print(f"Login error: {str(e)}")
         
     return render_template('auth/login.html')
 
@@ -47,11 +78,20 @@ def register():
             'company': request.form.get('company')
         }
         
+        backend_url = get_backend_url()
+        
         try:
+            # For debugging
+            print(f"Sending registration request to {backend_url}/api/auth/register with data: {json.dumps(data)}")
+            
             response = requests.post(
-                f'{request.host_url}api/auth/register',
+                f'{backend_url}/api/auth/register',
                 json=data
             )
+            
+            # For debugging
+            print(f"Registration response status code: {response.status_code}")
+            print(f"Registration response content: {response.text}")
             
             if response.status_code == 201:
                 result = response.json()
@@ -62,10 +102,16 @@ def register():
                 flash('Registration successful', 'success')
                 return redirect(url_for('dashboard.index'))
             else:
-                error_msg = response.json().get('error', 'Registration failed')
+                error_msg = "Registration failed"
+                if response.headers.get('Content-Type') == 'application/json':
+                    try:
+                        error_msg = response.json().get('error', 'Registration failed')
+                    except:
+                        pass
                 flash(error_msg, 'danger')
         except Exception as e:
-            flash(f'Error: {str(e)}', 'danger')
+            flash(f'Error connecting to the backend server: {str(e)}', 'danger')
+            print(f"Registration error: {str(e)}")
     
     return render_template('auth/register.html')
 
@@ -83,6 +129,7 @@ def profile():
         return redirect(url_for('auth.login'))
     
     headers = {'Authorization': f'Bearer {session["access_token"]}'}
+    backend_url = get_backend_url()
     
     if request.method == 'POST':
         data = {
@@ -103,7 +150,7 @@ def profile():
         
         try:
             response = requests.put(
-                f'{request.host_url}api/auth/profile',
+                f'{backend_url}/api/auth/profile',
                 headers=headers,
                 json=data
             )
@@ -114,12 +161,12 @@ def profile():
                 error_msg = response.json().get('error', 'Update failed')
                 flash(error_msg, 'danger')
         except Exception as e:
-            flash(f'Error: {str(e)}', 'danger')
+            flash(f'Error connecting to the backend server: {str(e)}', 'danger')
     
     # Get current profile
     try:
         response = requests.get(
-            f'{request.host_url}api/auth/profile',
+            f'{backend_url}/api/auth/profile',
             headers=headers
         )
         
@@ -130,7 +177,7 @@ def profile():
             flash('Failed to load profile data', 'danger')
             return redirect(url_for('dashboard.index'))
     except Exception as e:
-        flash(f'Error: {str(e)}', 'danger')
+        flash(f'Error connecting to the backend server: {str(e)}', 'danger')
         return redirect(url_for('dashboard.index'))
 
 @bp.route('/change-password', methods=['POST'])
@@ -145,10 +192,11 @@ def change_password():
     }
     
     headers = {'Authorization': f'Bearer {session["access_token"]}'}
+    backend_url = get_backend_url()
     
     try:
         response = requests.post(
-            f'{request.host_url}api/auth/change-password',
+            f'{backend_url}/api/auth/change-password',
             headers=headers,
             json=data
         )
@@ -159,7 +207,7 @@ def change_password():
             error_msg = response.json().get('error', 'Password change failed')
             flash(error_msg, 'danger')
     except Exception as e:
-        flash(f'Error: {str(e)}', 'danger')
+        flash(f'Error connecting to the backend server: {str(e)}', 'danger')
     
     return redirect(url_for('auth.profile'))
 
@@ -170,10 +218,11 @@ def refresh_token():
         return jsonify({"error": "No refresh token"}), 401
     
     headers = {'Authorization': f'Bearer {session["refresh_token"]}'}
+    backend_url = get_backend_url()
     
     try:
         response = requests.post(
-            f'{request.host_url}api/auth/refresh',
+            f'{backend_url}/api/auth/refresh',
             headers=headers
         )
         
@@ -187,4 +236,4 @@ def refresh_token():
             return jsonify({"error": "Session expired"}), 401
     except Exception as e:
         session.clear()
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Error connecting to the backend server: {str(e)}"}), 500

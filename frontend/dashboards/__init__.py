@@ -1,3 +1,4 @@
-from frontend.dashboards.main_dashboard import main_dashboard_layout, setup_main_dashboard_callbacks
-from frontend.dashboards.risk_analysis import risk_analysis_layout, setup_risk_analysis_callbacks
-from frontend.dashboards.vehicle_analysis import vehicle_analysis_layout, setup_vehicle_analysis_callbacks
+# dashboards/__init__.py
+from dashboards.main_dashboard import main_dashboard_layout, setup_main_dashboard_callbacks
+from dashboards.risk_analysis import risk_analysis_layout, setup_risk_analysis_callbacks
+from dashboards.vehicle_analysis import vehicle_analysis_layout, setup_vehicle_analysis_callbacks

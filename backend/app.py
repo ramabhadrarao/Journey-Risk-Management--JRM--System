@@ -167,6 +167,45 @@ def handle_subscribe(data):
     elif 'vehicle_id' in data:
         socketio.emit('subscription_success', {'message': f"Subscribed to vehicle {data['vehicle_id']}"})
 
+
+# Add this to backend/app.py or create a separate initialization script
+
+def create_default_admin():
+    """Create a default admin user if no users exist in the database"""
+    from models import db
+    from models.user import User
+    
+    # Check if any users exist
+    users_count = db.users.count_documents({})
+    
+    if users_count == 0:
+        # Create default admin user
+        admin_user = {
+            'username': 'admin',
+            'email': 'admin@jrmsystem.com',
+            'password': 'admin123',  # This will be hashed by the User.create method
+            'role': 'admin',
+            'company': 'JRM System'
+        }
+        
+        User.create(
+            username=admin_user['username'],
+            email=admin_user['email'],
+            password=admin_user['password'],
+            role=admin_user['role'],
+            company=admin_user['company']
+        )
+        
+        app.logger.info("Default admin user created")
+        print("Default admin user created:")
+        print(f"Username: {admin_user['username']}")
+        print(f"Password: {admin_user['password']}")
+    else:
+        app.logger.info("Users already exist, skipping default admin creation")
+
+# Add this to the end of app.py, just before the if __name__ == '__main__': block
+create_default_admin()
+
 # At the end of your app.py file, make sure it looks like this:
 if __name__ == '__main__':
     init_scheduler()

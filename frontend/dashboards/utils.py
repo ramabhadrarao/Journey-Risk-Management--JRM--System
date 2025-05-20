@@ -3,6 +3,10 @@ import dash_leaflet as dl
 from dash import html
 from flask import session
 import json
+import os
+
+# Get backend URL from environment variable
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:5000')
 
 def get_api_data(endpoint, use_session=False, raw_response=False):
     """
@@ -17,8 +21,11 @@ def get_api_data(endpoint, use_session=False, raw_response=False):
         Response data or None if error
     """
     try:
-        base_url = "http://localhost:5000"  # Use environment variable in production
-        url = f"{base_url}{endpoint}"
+        # Ensure endpoint starts with / but remove any trailing /
+        if not endpoint.startswith('/'):
+            endpoint = '/' + endpoint
+        
+        url = f"{BACKEND_URL}{endpoint}"
         
         headers = {}
         if use_session and 'access_token' in session:

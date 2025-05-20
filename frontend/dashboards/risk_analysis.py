@@ -11,7 +11,7 @@ import requests
 from datetime import datetime, timedelta
 import json
 
-from frontend.dashboards.utils import make_map, get_api_data, get_risk_color
+from dashboards.utils import make_map, get_api_data, get_risk_color
 
 # Risk Analysis Dashboard Layout
 risk_analysis_layout = dbc.Container([
